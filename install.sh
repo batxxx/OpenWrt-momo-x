@@ -3,7 +3,7 @@
 # Momo's installer
 
 # check env
-if [[ ! -x "/bin/opkg" && ! -x "/usr/bin/apk" || ! -x "/sbin/fw4" ]]; then
+if { [ ! -x "/bin/opkg" ] && [ ! -x "/usr/bin/apk" ]; } || [ ! -x "/sbin/fw4" ]; then
 	echo "only supports OpenWrt build with firewall4!"
 	exit 1
 fi
@@ -31,7 +31,7 @@ case "$DISTRIB_RELEASE" in
 esac
 
 # feed url
-repository_url="https://momomomo.pages.dev"
+repository_url="${MOMO_REPOSITORY_URL:-https://momomomo.pages.dev}"
 feed_url="$repository_url/$branch/$arch/momo"
 
 if [ -x "/bin/opkg" ]; then

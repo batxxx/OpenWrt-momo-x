@@ -40,7 +40,51 @@ Recommended packages:
 
 ## Installation
 
-### Install From Feed
+### Install The Current Modified Version
+
+The reliable way to install the modified version in this repository is to build packages from this repository, or to use package artifacts produced by this repository's GitHub Actions.
+
+Do not use the public feed/install scripts as the primary install method until a package feed has been rebuilt and published from `batxxx/OpenWrt-momo-x`. If the feed still points to older packages, it will install the old upstream build instead of this modified version.
+
+#### Build With OpenWrt SDK
+
+In an OpenWrt SDK or buildroot:
+
+```sh
+echo "src-git momo https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
+./scripts/feeds update momo
+./scripts/feeds install -a -p momo
+
+make package/momo/compile V=s
+make package/luci-app-momo/compile V=s
+```
+
+The generated packages are under:
+
+```text
+bin/packages/<architecture>/momo
+```
+
+Install the generated packages on the router:
+
+```sh
+# opkg firmware
+opkg install momo_*.ipk luci-app-momo_*.ipk luci-i18n-momo-zh-cn_*.ipk
+
+# apk firmware
+apk add --allow-untrusted momo-*.apk luci-app-momo-*.apk luci-i18n-momo-zh-cn-*.apk
+```
+
+#### Build With GitHub Actions
+
+1. Open `Actions` in this repository.
+2. Run the `build-packages` workflow for the target OpenWrt branch and architecture.
+3. Download the generated artifact.
+4. Copy the `.ipk` or `.apk` packages to the router and install them manually.
+
+### Published Feed Install
+
+Use this only after the package feed has been rebuilt and published from this repository. The default scripts read `https://momomomo.pages.dev`; publish a fresh feed there or run the scripts with `MOMO_REPOSITORY_URL` pointing to your own feed.
 
 Add the feed once:
 
@@ -61,6 +105,8 @@ apk add momo luci-app-momo luci-i18n-momo-zh-cn
 ```
 
 ### Install From Release
+
+Use this only after the release/install feed has been rebuilt and published from this repository.
 
 ```sh
 wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.sh | ash
@@ -282,9 +328,10 @@ wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/uninstall
 
 ```sh
 echo "src-git momo https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
-./scripts/feeds update -a
-./scripts/feeds install -a
-make package/luci-app-momo/compile
+./scripts/feeds update momo
+./scripts/feeds install -a -p momo
+make package/momo/compile V=s
+make package/luci-app-momo/compile V=s
 ```
 
 Package files will be generated under `bin/packages/<architecture>/momo`.
