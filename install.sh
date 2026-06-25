@@ -31,7 +31,7 @@ case "$DISTRIB_RELEASE" in
 esac
 
 # feed url
-repository_url="${MOMO_REPOSITORY_URL:-https://momomomo.pages.dev}"
+repository_url="${MOMO_REPOSITORY_URL:-https://batxxx.github.io/OpenWrt-momo-x}"
 feed_url="$repository_url/$branch/$arch/momo"
 
 if [ -x "/bin/opkg" ]; then

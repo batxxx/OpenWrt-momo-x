@@ -40,62 +40,32 @@ Recommended packages:
 
 ## Installation
 
-### Recommended: Install The Current Modified Version
+### Publish The Package Feed
 
-The reliable way to install the modified version in this repository is to use package artifacts produced by this repository's GitHub Actions, or to build packages from this repository yourself.
+This fork publishes its package feed with GitHub Pages.
 
-Do not use the public feed/install scripts as the primary install method. The default feed URL, `https://momomomo.pages.dev`, is a published OpenWrt package feed. It contains package files such as `momo`, `luci-app-momo`, and LuCI translation packages; it is not just the sing-box core. If that feed was built from older upstream code, it will install the old LuCI pages and old service scripts.
+One-time setup:
 
-#### Install From GitHub Actions Artifacts
+1. Open this repository on GitHub.
+2. Go to `Settings` -> `Pages`.
+3. Set `Build and deployment` -> `Source` to `GitHub Actions`.
+4. Go to `Settings` -> `Secrets and variables` -> `Actions`.
+5. Add the package signing secrets required by the release workflow:
+   - `KEY_BUILD`
+   - `KEY_BUILD_PUB`
+   - `PRIVATE_KEY`
+   - `PUBLIC_KEY`
+6. Open `Actions` -> `release-packages` and run the workflow.
 
-1. Open `Actions` in this repository.
-2. Run the `build-packages` workflow for the target OpenWrt branch and architecture.
-3. Download the generated artifact.
-4. Copy the `.ipk` or `.apk` packages to the router.
-5. Install them manually:
-
-```sh
-# opkg firmware
-opkg install momo_*.ipk luci-app-momo_*.ipk luci-i18n-momo-zh-cn_*.ipk
-
-# apk firmware
-apk add --allow-untrusted momo-*.apk luci-app-momo-*.apk luci-i18n-momo-zh-cn-*.apk
-```
-
-#### Build With OpenWrt SDK
-
-In an OpenWrt SDK or buildroot:
-
-```sh
-echo "src-git momo https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
-./scripts/feeds update momo
-./scripts/feeds install -a -p momo
-
-make package/momo/compile V=s
-make package/luci-app-momo/compile V=s
-```
-
-The generated packages are under:
+After the workflow finishes, the feed is published at:
 
 ```text
-bin/packages/<architecture>/momo
+https://batxxx.github.io/OpenWrt-momo-x
 ```
 
-Copy the generated packages to the router and install them:
+### Install From Feed
 
-```sh
-# opkg firmware
-opkg install momo_*.ipk luci-app-momo_*.ipk luci-i18n-momo-zh-cn_*.ipk
-
-# apk firmware
-apk add --allow-untrusted momo-*.apk luci-app-momo-*.apk luci-i18n-momo-zh-cn-*.apk
-```
-
-### Maintainer Only: Published Feed Install
-
-This project does not currently provide a fresh public package feed for the modified fork. Use this section only if you maintain a package feed and have rebuilt it from this repository.
-
-Add the feed once:
+After the GitHub Pages feed has been published, add the feed once:
 
 ```sh
 wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/feed.sh | ash
@@ -113,12 +83,53 @@ apk update
 apk add momo luci-app-momo luci-i18n-momo-zh-cn
 ```
 
-### Maintainer Only: Release Feed Install
+### Install From Release Feed
 
-Use this only if the release/install feed has been rebuilt and published from this repository.
+After the GitHub Pages feed has been published, the install script can download and install the latest package files directly:
 
 ```sh
 wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.sh | ash
+```
+
+### Install From GitHub Actions Artifacts
+
+If the feed has not been published yet, use the build artifact directly:
+
+1. Open `Actions` in this repository.
+2. Run the `build-packages` workflow for the target OpenWrt branch and architecture.
+3. Download the generated artifact.
+4. Copy the `.ipk` or `.apk` packages to the router.
+5. Install them manually:
+
+```sh
+# opkg firmware
+opkg install momo_*.ipk luci-app-momo_*.ipk luci-i18n-momo-zh-cn_*.ipk
+
+# apk firmware
+apk add --allow-untrusted momo-*.apk luci-app-momo-*.apk luci-i18n-momo-zh-cn-*.apk
+```
+
+### Build With OpenWrt SDK
+
+In an OpenWrt SDK or buildroot:
+
+```sh
+echo "src-git momo https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
+./scripts/feeds update momo
+./scripts/feeds install -a -p momo
+
+make package/momo/compile V=s
+make package/luci-app-momo/compile V=s
+```
+
+The generated packages are under `bin/packages/<architecture>/momo`. Copy them to the router and install them:
+
+```sh
+# opkg firmware
+opkg install momo_*.ipk luci-app-momo_*.ipk luci-i18n-momo-zh-cn_*.ipk
+
+# apk firmware
+apk add --allow-untrusted momo-*.apk luci-app-momo-*.apk luci-i18n-momo-zh-cn-*.apk
 ```
 
 ## Quick Start
