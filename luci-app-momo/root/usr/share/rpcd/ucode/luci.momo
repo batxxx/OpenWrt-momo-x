@@ -2,13 +2,158 @@
 
 'use strict';
 
-import { popen } from 'fs';
+import { access, popen, readfile, writefile } from 'fs';
+import { cursor } from 'uci';
 import { get_paths, merge_exists, get_users, get_groups, get_cgroups, load_profile } from '/etc/momo/ucode/include.uc';
+
+function shellquote(s) {
+	return `'${replace(s, "'", "'\\''")}'`;
+}
+
+function has_kernel_module(kmod) {
+	return system(sprintf('[ -e "/lib/modules/$(uname -r)"/%s ]', kmod)) == 0;
+}
+
+function local_subconverter() {
+	const paths = get_paths();
+	const legacy_binary = paths.home_dir + '/subconverter/subconverter';
+	const metacubex_binary = paths.home_dir + '/subconverter/base/subconverter';
+	let result = {
+		url: 'http://127.0.0.1:25500/sub',
+		binary: legacy_binary,
+		installed: false,
+		running: false,
+		version: ''
+	};
+	let process;
+	const uci = cursor();
+	const port = uci.get('momo', 'local_subconverter', 'port') || '25500';
+
+	result.url = uci.get('momo', 'local_subconverter', 'url') || result.url;
+	if (access(metacubex_binary)) {
+		result.binary = metacubex_binary;
+	}
+
+	result.installed = access(result.binary);
+	process = popen("curl -fsS -m 2 " + shellquote("http://127.0.0.1:" + port + "/version") + " 2>/dev/null");
+	if (process) {
+		result.version = trim(process.read('all'));
+		process.close();
+	}
+	result.running = length(result.version) > 0;
+
+	return result;
+}
+
+function subscription_result(section_id, command_success) {
+	const paths = get_paths();
+	const uci = cursor();
+	const state = uci.get_all('momo', section_id) || {};
+	const file = paths.subscriptions_dir + '/' + (state.output_file || (section_id + '.json'));
+	const ok = command_success && state.success == '1' && access(file);
+	let rule_count = 0;
+	if (access(file)) {
+		try {
+			const profile = json(readfile(file));
+			rule_count = length(profile?.route?.rules || []);
+		} catch (e) {
+		}
+	}
+
+	return {
+		success: ok,
+		section_id: section_id,
+		name: state.name || section_id,
+		error: state.error || '',
+		update: state.update || '',
+		used: state.used || '',
+		total: state.total || '',
+		expire: state.expire || '',
+		file: file,
+		file_exists: access(file),
+		rule_count: rule_count
+	};
+}
+
+function resolve_subscription_section(section_id) {
+	if (!section_id || substr(section_id, 0, 1) != '@') {
+		return section_id;
+	}
+
+	const process = popen('uci show ' + shellquote('momo.' + section_id) + ' 2>/dev/null | sed -n "1s/^momo\\.\\([^=]*\\)=subscription$/\\1/p"');
+	if (process) {
+		const resolved = trim(process.read('all'));
+		process.close();
+		if (resolved) {
+			return resolved;
+		}
+	}
+
+	return section_id;
+}
+
+function controller_url(listen, path) {
+	let url = listen || '';
+
+	if (substr(url, 0, length('0.0.0.0:')) == '0.0.0.0:') {
+		url = '127.0.0.1:' + substr(url, length('0.0.0.0:'));
+	} else if (substr(url, 0, length('[::]:')) == '[::]:') {
+		url = '127.0.0.1:' + substr(url, length('[::]:'));
+	} else if (substr(url, 0, length('::')) == '::') {
+		url = '127.0.0.1' + substr(url, length('::'));
+	}
+
+	if (!match(url, /^https?:\/\//)) {
+		url = 'http://' + url;
+	}
+
+	return url + path;
+}
+
+function normalize_method(method) {
+	method = method || 'GET';
+	if (method == 'get') return 'GET';
+	if (method == 'post') return 'POST';
+	if (method == 'put') return 'PUT';
+	if (method == 'patch') return 'PATCH';
+	if (method == 'delete') return 'DELETE';
+	return method;
+}
+
+function allowed_profile_path(path) {
+	if (!path) {
+		return false;
+	}
+
+	if (substr(path, 0, length('/etc/momo/profiles/')) != '/etc/momo/profiles/' &&
+	    substr(path, 0, length('/etc/momo/subscriptions/')) != '/etc/momo/subscriptions/') {
+		return false;
+	}
+
+	return match(path, /\.(json|yaml|yml)$/) != null;
+}
 
 const methods = {
 	get_paths: {
 		call: function() {
 			return get_paths();
+		}
+	},
+	commit_config: {
+		call: function() {
+			const uci = cursor();
+			uci.commit('momo');
+			return { success: true };
+		}
+	},
+	save_route_append: {
+		args: { prepend: 'prepend', append: 'append' },
+		call: function(req) {
+			const uci = cursor();
+			uci.set('momo', 'mixin', 'route_rules_prepend', req.args?.prepend || '[]');
+			uci.set('momo', 'mixin', 'route_rules_append', req.args?.append || '[]');
+			uci.commit('momo');
+			return { success: true };
 		}
 	},
 	version: {
@@ -37,6 +182,48 @@ const methods = {
 			return { app: app, core: core };
 		}
 	},
+	features: {
+		call: function() {
+			let features = {};
+			let process;
+
+			process = popen('uname -r');
+			if (process) {
+				features.kernel = trim(process.read('all'));
+				process.close();
+			}
+
+			process = popen('/usr/bin/sing-box version');
+			if (process) {
+				for (let line = process.read('line'); length(line); line = process.read('line')) {
+					line = trim(line);
+					let version = match(line, /^sing-box version (.*)/);
+					if (version) {
+						features.version = version[1];
+					}
+					let tags = match(line, /^Tags: (.*)/);
+					if (tags) {
+						features.tags = tags[1];
+						for (let tag in split(tags[1], ',')) {
+							features[trim(tag)] = true;
+						}
+					}
+				}
+				process.close();
+			}
+
+			features.has_firewall4 = access('/sbin/fw4');
+			features.has_ip_full = access('/usr/libexec/ip-full') || access('/sbin/ip') || access('/usr/sbin/ip');
+			features.has_ujail = access('/sbin/ujail');
+			features.has_nft_socket = has_kernel_module('nft_socket.ko') || access('/etc/modules.d/nft-socket');
+			features.has_nft_tproxy = has_kernel_module('nft_tproxy.ko') || access('/etc/modules.d/nft-tproxy');
+			features.has_tun = has_kernel_module('tun.ko') || access('/etc/modules.d/30-tun');
+			features.has_dummy = has_kernel_module('dummy.ko') || access('/etc/modules.d/dummy');
+			features.local_subconverter = local_subconverter();
+
+			return features;
+		}
+	},
 	profile: {
 		args: { defaults: {} },
 		call: function(req) {
@@ -48,12 +235,123 @@ const methods = {
 	update_subscription: {
 		args: { section_id: 'section_id' },
 		call: function(req) {
-			let success = false;
-			const section_id = req.args?.section_id;
+			const section_id = resolve_subscription_section(req.args?.section_id);
 			if (section_id) {
-				success = system(['service', 'momo', 'update_subscription', section_id]) == 0;
+				const success = system(['service', 'momo', 'update_subscription', section_id]) == 0;
+				return subscription_result(section_id, success);
 			}
+			return { success: false, error: 'missing section id' };
+		}
+	},
+	update_subscriptions: {
+		call: function() {
+			const success = system(['service', 'momo', 'update_subscriptions']) == 0;
 			return { success: success };
+		}
+	},
+	set_profile: {
+		args: { profile: 'profile' },
+		call: function(req) {
+			const profile = req.args?.profile;
+			if (!profile) {
+				return { success: false, error: 'missing profile' };
+			}
+			const uci = cursor();
+			uci.set('momo', 'config', 'profile', profile);
+			uci.commit('momo');
+			return { success: true, profile: profile };
+		}
+	},
+	validate_profile: {
+		args: { content: 'content' },
+		call: function(req) {
+			const content = req.args?.content;
+			if (!content) {
+				return { success: false, error: 'empty profile content' };
+			}
+
+			const profile_path = '/tmp/momo-profile-check.json';
+			const log_path = '/tmp/momo-profile-check.log';
+			let error = '';
+
+			try {
+				json(content);
+			} catch (e) {
+				return { success: false, error: 'JSON 解析失败：' + e };
+			}
+
+			writefile(profile_path, content);
+			const success = system('/usr/bin/sing-box check -c ' + shellquote(profile_path) + ' > ' + shellquote(log_path) + ' 2>&1') == 0;
+			if (access(log_path)) {
+				error = trim(readfile(log_path));
+			}
+			system('rm -f ' + shellquote(profile_path) + ' ' + shellquote(log_path));
+
+			return { success: success, error: error };
+		}
+	},
+	validate_profile_path: {
+		args: { path: 'path' },
+		call: function(req) {
+			const path = req.args?.path;
+			if (!allowed_profile_path(path)) {
+				return { success: false, error: 'illegal profile path' };
+			}
+			if (!access(path)) {
+				return { success: false, error: 'profile file not found' };
+			}
+
+			const log_path = '/tmp/momo-profile-check.log';
+			let error = '';
+			const success = system('/usr/bin/sing-box check -c ' + shellquote(path) + ' > ' + shellquote(log_path) + ' 2>&1') == 0;
+			if (access(log_path)) {
+				error = trim(readfile(log_path));
+			}
+			system('rm -f ' + shellquote(log_path));
+
+			return { success: success, error: error };
+		}
+	},
+	log: {
+		args: { type: 'type', log_len: 'log_len' },
+		call: function(req) {
+			const paths = get_paths();
+			const type = req.args?.type;
+			const log_len = int(req.args?.log_len || 0);
+			let path;
+
+			if (type == 'app') {
+				path = paths.app_log_path;
+			} else if (type == 'core') {
+				path = paths.core_log_path;
+			} else {
+				return { len: 0, update: false, log: '', error: 'illegal type' };
+			}
+
+			if (!access(path)) {
+				return { len: 0, update: false, log: '' };
+			}
+
+			let process = popen(`wc -l < ${shellquote(path)}`);
+			let total_lines = 0;
+			if (process) {
+				total_lines = +trim(process.read('all')) || 0;
+				process.close();
+			}
+
+			if (total_lines == log_len && log_len > 0) {
+				return { len: total_lines, update: false, log: '' };
+			}
+
+			const start_line = (log_len > 0 && total_lines > log_len) ? (log_len + 1) : 1;
+			process = popen(`tail -n +${start_line} ${shellquote(path)} | tail -n 1000`);
+			let log = '';
+			if (process) {
+				log = process.read('all');
+				process.close();
+			}
+
+			return { len: total_lines, update: true, log: log };
 		}
 	},
 	api: {
@@ -61,10 +359,14 @@ const methods = {
 		call: function(req) {
 			let result = {};
 
-			const method = req.args?.method;
-			const path = req.args?.path;
-			const query = req.args?.query;
-			const body = req.args?.body;
+			const method = normalize_method(req.args?.method);
+			const path = req.args?.path || '/';
+			const query = req.args?.query || '';
+			const body = req.args?.body || '';
+
+			if (index(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], method) < 0 || substr(path, 0, 1) != '/') {
+				return result;
+			}
 
 			const profile = load_profile();
 			const api_listen = profile['experimental']['clash_api']['external_controller'];
@@ -74,11 +376,27 @@ const methods = {
 				return result;
 			}
 
-			const url = api_listen + path;
+			const url = controller_url(api_listen, path);
 
-			const process = popen(`curl --request '${method}' --oauth2-bearer '${api_secret}' --url-query '${query}' --data '${body}' '${url}'`);
+			let command = 'curl -fsS --max-time 20 --connect-timeout 5 --request ' + shellquote(method);
+			if (api_secret) {
+				command += ' --oauth2-bearer ' + shellquote(api_secret);
+			}
+			command += ' ' + shellquote(url);
+			if (query) {
+				command += ' --url-query ' + shellquote(query);
+			}
+			if (body) {
+				command += ' --data ' + shellquote(body);
+			}
+
+			const process = popen(command);
 			if (process) {
-				result = json(process);
+				try {
+					result = json(process);
+				} catch (e) {
+					result = {};
+				}
 				process.close();
 			}
 

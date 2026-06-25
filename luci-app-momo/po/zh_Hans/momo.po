@@ -644,3 +644,87 @@ msgstr "用户代理（UA）"
 #: applications/luci-app-momo/htdocs/luci-static/resources/view/momo/app.js:128
 msgid "procd Config"
 msgstr "procd 配置"
+
+msgid "Auto Disable QUIC GSO on Linux 6.6"
+msgstr "在 Linux 6.6 自动禁用 QUIC GSO"
+
+msgid "Dummy Module"
+msgstr "Dummy 模块"
+
+msgid "Enable ujail Sandbox"
+msgstr "启用 ujail 沙箱"
+
+msgid "Firewall4"
+msgstr "Firewall4"
+
+msgid "ip-full"
+msgstr "ip-full"
+
+msgid "Kernel Version"
+msgstr "内核版本"
+
+msgid "No"
+msgstr "否"
+
+msgid "Runtime Features"
+msgstr "运行特性"
+
+msgid "sing-box Tags"
+msgstr "sing-box 标签"
+
+msgid "TPROXY Module"
+msgstr "TPROXY 模块"
+
+msgid "TUN Module"
+msgstr "TUN 模块"
+
+msgid "ujail Sandbox"
+msgstr "ujail 沙箱"
+
+msgid "Yes"
+msgstr "是"
+
+msgid "Allow Insecure"
+msgstr "允许不安全连接"
+
+msgid "Download Proxy"
+msgstr "下载代理"
+
+msgid "Error"
+msgstr "错误"
+
+msgid "Failed"
+msgstr "失败"
+
+msgid "Remark"
+msgstr "备注"
+
+msgid "Scheduled Subscription Update"
+msgstr "定时更新订阅"
+
+msgid "Scheduled Subscription Update Cron"
+msgstr "定时更新订阅 Cron"
+
+msgid "Success"
+msgstr "成功"
+
+msgid "Update All Subscriptions"
+msgstr "更新全部订阅"
+
+msgid "Subscription Management"
+msgstr "订阅管理"
+
+msgid "Append Route Rules"
+msgstr "追加路由规则"
+
+msgid "Invalid JSON"
+msgstr "无效 JSON"
+
+msgid "Must be a JSON array"
+msgstr "必须是 JSON 数组"
+
+msgid "Prepend Route Rules"
+msgstr "前置路由规则"
+
+msgid "Route Config"
+msgstr "路由配置"

@@ -9,6 +9,7 @@ PROG="/usr/bin/sing-box"
 . "$IPKG_INSTROOT/etc/momo/scripts/include.sh"
 
 extra_command 'update_subscription' 'Update subscription by section id'
+extra_command 'update_subscriptions' 'Update all enabled subscriptions'
 extra_command 'clear_logs' 'Clear logs if size exceeds the limit'
 
 boot_func() {
@@ -32,11 +33,163 @@ boot() {
 	boot_func < /dev/null > /dev/null 2>&1 &
 }
 
+write_dashboard_config() {
+	local api_listen ui_path api_port ui_dir
+	api_listen=$(jsonfilter -q -i "$RUN_PROFILE_PATH" -e "@['experimental']['clash_api']['external_controller']")
+	ui_path=$(jsonfilter -q -i "$RUN_PROFILE_PATH" -e "@['experimental']['clash_api']['external_ui']")
+	[ -n "$api_listen" ] || return
+	[ -n "$ui_path" ] || return
+	api_port="${api_listen##*:}"
+	api_port="${api_port%]}"
+	[ -n "$api_port" ] || return
+	ui_dir="$RUN_DIR/$ui_path"
+	[ -d "$ui_dir" ] || return
+	cat > "$ui_dir/config.js" <<EOF
+(function () {
+  var backend = window.location.protocol + '//' + window.location.hostname + ':$api_port';
+  window.__METACUBEXD_CONFIG__ = {
+    defaultBackendURL: backend,
+  };
+  function rewriteStorage(storage) {
+    if (!storage) return;
+    for (var i = 0; i < storage.length; i++) {
+      var key = storage.key(i);
+      var value = storage.getItem(key);
+      if (!value || value.indexOf('127.0.0.1:9090') < 0) continue;
+      storage.setItem(key, value
+        .split('http://127.0.0.1:9090').join(backend)
+        .split('https://127.0.0.1:9090').join(backend));
+    }
+  }
+  try { rewriteStorage(window.localStorage); } catch (e) {}
+  try { rewriteStorage(window.sessionStorage); } catch (e) {}
+})();
+EOF
+	if [ -f "$ui_dir/index.html" ] && grep -q 'id="app" data-base-url=' "$ui_dir/index.html"; then
+		sed -i "s#<div id=\"app\" data-base-url=\"[^\"]*\"></div>#<script>document.write('<div id=\"app\" data-base-url=\"' + window.location.protocol + '//' + window.location.hostname + ':$api_port' + '\"></div>')</script>#" "$ui_dir/index.html"
+	fi
+}
+
+safe_profile_filename() {
+	local name fallback safe
+	name="$1"
+	fallback="$2"
+	safe="$(printf '%s' "$name" | sed 's/[\/\\:*?"<>|]/_/g; s/[[:space:]]\+/_/g; s/[^A-Za-z0-9._-]/_/g; s/^_*//; s/_*$//')"
+	[ -n "$safe" ] || safe="$fallback"
+	case "$safe" in
+		*.json|*.yaml|*.yml) ;;
+		*) safe="$safe.json" ;;
+	esac
+	printf '%s' "$safe"
+}
+
+subscription_output_file() {
+	local section name output_file
+	section="$1"
+	config_get output_file "$section" "output_file"
+	if [ -z "$output_file" ]; then
+		config_get name "$section" "name"
+		output_file="$(safe_profile_filename "$name" "$section")"
+	fi
+	printf '%s/%s' "$SUBSCRIPTIONS_DIR" "$output_file"
+}
+
+subscription_update_cron() {
+	local mode weekday time hour minute interval
+	config_get mode "config" "subscription_update_mode" "appointment"
+	if [ "$mode" = "cycle" ]; then
+		config_get interval "config" "subscription_update_interval" "60"
+		case "$interval" in
+			5|10|15|20|30) echo "*/$interval * * * *" ;;
+			60) echo "0 * * * *" ;;
+			120) echo "0 */2 * * *" ;;
+			180) echo "0 */3 * * *" ;;
+			360) echo "0 */6 * * *" ;;
+			720) echo "0 */12 * * *" ;;
+			1440) echo "0 0 * * *" ;;
+			*) echo "0 * * * *" ;;
+		esac
+		return
+	fi
+	config_get weekday "config" "subscription_update_weekday" "*"
+	config_get time "config" "subscription_update_time" "04:00"
+	hour="${time%%:*}"
+	minute="${time##*:}"
+	[ -n "$hour" ] || hour=4
+	[ -n "$minute" ] || minute=0
+	echo "$minute $hour * * $weekday"
+}
+
+build_scheduled_restart_cron() {
+	local mode weekday time hour minute interval
+	config_get mode "config" "scheduled_restart_mode" "appointment"
+	if [ "$mode" = "cycle" ]; then
+		config_get interval "config" "scheduled_restart_interval" "1440"
+		case "$interval" in
+			5|10|15|20|30) echo "*/$interval * * * *" ;;
+			60) echo "0 * * * *" ;;
+			120) echo "0 */2 * * *" ;;
+			180) echo "0 */3 * * *" ;;
+			360) echo "0 */6 * * *" ;;
+			720) echo "0 */12 * * *" ;;
+			1440) echo "0 0 * * *" ;;
+			*) echo "0 3 * * *" ;;
+		esac
+		return
+	fi
+	config_get weekday "config" "scheduled_restart_weekday" "*"
+	config_get time "config" "scheduled_restart_time" "03:00"
+	hour="${time%%:*}"
+	minute="${time##*:}"
+	[ -n "$hour" ] || hour=3
+	[ -n "$minute" ] || minute=0
+	echo "$minute $hour * * $weekday"
+}
+
+build_log_clear_cron() {
+	local mode weekday time hour minute interval
+	config_get mode "log" "scheduled_clear_mode" "cycle"
+	if [ "$mode" = "cycle" ]; then
+		config_get interval "log" "scheduled_clear_interval" "5"
+		case "$interval" in
+			5|10|15|20|30) echo "*/$interval * * * *" ;;
+			60) echo "0 * * * *" ;;
+			120) echo "0 */2 * * *" ;;
+			180) echo "0 */3 * * *" ;;
+			360) echo "0 */6 * * *" ;;
+			720) echo "0 */12 * * *" ;;
+			1440) echo "0 0 * * *" ;;
+			*) echo "*/5 * * * *" ;;
+		esac
+		return
+	fi
+	config_get weekday "log" "scheduled_clear_weekday" "*"
+	config_get time "log" "scheduled_clear_time" "03:00"
+	hour="${time%%:*}"
+	minute="${time##*:}"
+	[ -n "$hour" ] || hour=3
+	[ -n "$minute" ] || minute=0
+	echo "$minute $hour * * $weekday"
+}
+
 start_service() {
 	# prepare files
 	prepare_files
 	# load config
 	config_load momo
+	# get app config needed before enabled check
+	local subscription_scheduled_update subscription_scheduled_update_cron
+	config_get_bool subscription_scheduled_update "config" "subscription_scheduled_update" 0
+	subscription_scheduled_update_cron="$(subscription_update_cron)"
+	if [ -z "$subscription_scheduled_update_cron" ]; then
+		config_get subscription_scheduled_update_cron "config" "subscription_scheduled_update_cron"
+	fi
+	sed -i "/#momo subscription scheduled update/d" "/etc/crontabs/root" > /dev/null 2>&1
+	if [ "$subscription_scheduled_update" = 1 ] && [ -n "$subscription_scheduled_update_cron" ]; then
+		log "App" "Set subscription scheduled update."
+		echo "$subscription_scheduled_update_cron /etc/init.d/momo update_subscriptions #momo subscription scheduled update" >> "/etc/crontabs/root"
+		/etc/init.d/cron restart
+	fi
 	# check if enabled
 	local enabled
 	config_get_bool enabled "config" "enabled" 0
@@ -58,14 +211,19 @@ start_service() {
 	## app config
 	local scheduled_restart scheduled_restart_cron profile test_profile core_only
 	config_get_bool scheduled_restart "config" "scheduled_restart" 0
-	config_get scheduled_restart_cron "config" "scheduled_restart_cron"
+	scheduled_restart_cron="$(build_scheduled_restart_cron)"
+	if [ -z "$scheduled_restart_cron" ]; then
+		config_get scheduled_restart_cron "config" "scheduled_restart_cron"
+	fi
 	config_get profile "config" "profile"
 	config_get_bool test_profile "config" "test_profile" 0
 	config_get_bool core_only "config" "core_only" 0
 	## procd config
 	### general
-	local fast_reload
+	local fast_reload quic_go_disable_gso_auto enable_ujail
 	config_get_bool fast_reload "procd" "fast_reload" 0
+	config_get_bool quic_go_disable_gso_auto "procd" "quic_go_disable_gso_auto" 1
+	config_get_bool enable_ujail "procd" "enable_ujail" 0
 	### rlimit
 	local rlimit_nproc_soft rlimit_nproc_hard rlimit_address_space_soft rlimit_address_space_hard rlimit_data_soft rlimit_data_hard rlimit_stack_soft rlimit_stack_hard rlimit_nofile_soft rlimit_nofile_hard
 	config_get rlimit_nproc_soft "procd" "rlimit_nproc_soft" "$(ulimit -Su)"
@@ -99,7 +257,10 @@ start_service() {
 	## log config
 	local log_scheduled_clear log_scheduled_clear_cron
 	config_get_bool log_scheduled_clear "log" "scheduled_clear" 0
-	config_get log_scheduled_clear_cron "log" "scheduled_clear_cron"
+	log_scheduled_clear_cron="$(build_log_clear_cron)"
+	if [ -z "$log_scheduled_clear_cron" ]; then
+		config_get log_scheduled_clear_cron "log" "scheduled_clear_cron"
+	fi
 	# get profile
 	local profile_type; profile_type=$(echo "$profile" | cut -d ':' -f 1)
 	local profile_id; profile_id=$(echo "$profile" | cut -d ':' -f 2)
@@ -119,7 +280,7 @@ start_service() {
 		config_get subscription_name "$subscription_section" "name"
 		config_get subscription_prefer "$subscription_section" "prefer" "remote"
 		log "Profile" "Use subscription: $subscription_name."
-		local subscription_file; subscription_file="$SUBSCRIPTIONS_DIR/$subscription_section.json"
+		local subscription_file; subscription_file="$(subscription_output_file "$subscription_section")"
 		if [ "$subscription_prefer" = "remote" ] || [ ! -f "$subscription_file" ]; then
 			update_subscription "$subscription_section"
 		fi
@@ -134,13 +295,15 @@ start_service() {
 		log "App" "Exit."
 		return
 	fi
+	# format profile
+	$PROG -c "$RUN_PROFILE_PATH" format -w
+	ucode -S "$PROFILE_NORMALIZE_UC" "$RUN_PROFILE_PATH"
 	# mixin
 	if [ "$core_only" = 0 ]; then
 		log "Mixin" "Mixin config."
 		ucode -S "$MIXIN_UC"
 	fi
-	# format profile
-	$PROG -c "$RUN_PROFILE_PATH" format -w
+	write_dashboard_config
 	# check profile
 	if [ "$core_only" = 0 ] && [ "$proxy_enabled" = 1 ]; then
 		log "Profile" "Checking..."
@@ -214,6 +377,22 @@ start_service() {
 
 	procd_append_param env GOMAXPROCS="$env_go_max_procs"
 	procd_append_param env GOMEMLIMIT="$env_go_mem_limit"
+	if [ "$quic_go_disable_gso_auto" = 1 ] && uname -r | grep -Eq "^6\.6"; then
+		procd_append_param env QUIC_GO_DISABLE_GSO="true"
+	fi
+	if [ "$enable_ujail" = 1 ] && [ -x "/sbin/ujail" ]; then
+		procd_add_jail "momo" log procfs
+		procd_add_jail_mount "$PROG"
+		procd_add_jail_mount "$RUN_PROFILE_PATH"
+		procd_add_jail_mount "$HOME_DIR"
+		procd_add_jail_mount "/etc/ssl"
+		procd_add_jail_mount "/etc/localtime"
+		procd_add_jail_mount "/etc/TZ"
+		procd_add_jail_mount_rw "$RUN_DIR"
+		procd_add_jail_mount_rw "$LOG_DIR"
+		procd_set_param capabilities "/etc/capabilities/momo.json"
+		procd_set_param no_new_privs 1
+	fi
 
 	procd_close_instance
 	# cron
@@ -487,11 +666,46 @@ update_subscription() {
 	# load config
 	config_load momo
 	# get subscription config
-	local subscription_name subscription_info_url subscription_url subscription_user_agent
+	local subscription_enabled subscription_name subscription_info_url subscription_url subscription_user_agent subscription_allow_insecure subscription_proxy subscription_convert subscription_convert_api subscription_convert_target subscription_convert_template subscription_convert_custom_template subscription_convert_emoji subscription_convert_udp subscription_convert_skip_cert_verify subscription_convert_sort subscription_convert_node_type subscription_convert_rule_provider subscription_filter_keywords subscription_exclude_keywords subscription_exclude_invalid
+	config_get_bool subscription_enabled "$subscription_section" "enabled" 1
 	config_get subscription_name "$subscription_section" "name"
 	config_get subscription_info_url "$subscription_section" "info_url"
 	config_get subscription_url "$subscription_section" "url"
 	config_get subscription_user_agent "$subscription_section" "user_agent"
+	config_get_bool subscription_allow_insecure "$subscription_section" "allow_insecure" 0
+	config_get subscription_proxy "$subscription_section" "download_proxy"
+	config_get_bool subscription_convert "$subscription_section" "convert" 0
+	config_get subscription_convert_api "$subscription_section" "convert_api" "https://api.asailor.org/sub"
+	config_get subscription_convert_target "$subscription_section" "convert_target" "singbox"
+	[ "$subscription_convert_target" = "singbox" ] || subscription_convert_target="singbox"
+	config_get subscription_convert_template "$subscription_section" "convert_template" ""
+	config_get subscription_convert_custom_template "$subscription_section" "convert_custom_template" ""
+	config_get_bool subscription_convert_emoji "$subscription_section" "convert_emoji" 0
+	config_get_bool subscription_convert_udp "$subscription_section" "convert_udp" 1
+	config_get_bool subscription_convert_skip_cert_verify "$subscription_section" "convert_skip_cert_verify" 0
+	config_get_bool subscription_convert_sort "$subscription_section" "convert_sort" 0
+	config_get_bool subscription_convert_node_type "$subscription_section" "convert_node_type" 0
+	config_get_bool subscription_convert_rule_provider "$subscription_section" "convert_rule_provider" 1
+	config_get subscription_filter_keywords "$subscription_section" "filter_keywords"
+	config_get subscription_exclude_keywords "$subscription_section" "exclude_keywords"
+	config_get_bool subscription_exclude_invalid "$subscription_section" "exclude_invalid" 1
+	if [ -z "$subscription_url" ] && [ -n "$subscription_info_url" ]; then
+		subscription_url="$subscription_info_url"
+	fi
+	if [ "$subscription_convert_template" = "custom" ]; then
+		subscription_convert_template="$subscription_convert_custom_template"
+	fi
+	[ "$subscription_convert_emoji" = 1 ] && subscription_convert_emoji="true" || subscription_convert_emoji="false"
+	[ "$subscription_convert_udp" = 1 ] && subscription_convert_udp="true" || subscription_convert_udp="false"
+	[ "$subscription_convert_skip_cert_verify" = 1 ] && subscription_convert_skip_cert_verify="true" || subscription_convert_skip_cert_verify="false"
+	[ "$subscription_convert_sort" = 1 ] && subscription_convert_sort="true" || subscription_convert_sort="false"
+	[ "$subscription_convert_node_type" = 1 ] && subscription_convert_node_type="true" || subscription_convert_node_type="false"
+	[ "$subscription_convert_rule_provider" = 1 ] && subscription_convert_rule_provider="true" || subscription_convert_rule_provider="false"
+	[ "$subscription_exclude_invalid" = 1 ] && subscription_exclude_invalid="true" || subscription_exclude_invalid="false"
+	if [ "$subscription_enabled" = 0 ]; then
+		log "Profile" "Skip disabled subscription: $subscription_name."
+		return
+	fi
 	# reset subscription info
 	uci_remove "momo" "$subscription_section" "expire" > /dev/null 2>&1
 	uci_remove "momo" "$subscription_section" "upload" > /dev/null 2>&1
@@ -501,18 +715,122 @@ update_subscription() {
 	uci_remove "momo" "$subscription_section" "avaliable" > /dev/null 2>&1
 	uci_remove "momo" "$subscription_section" "update" > /dev/null 2>&1
 	uci_remove "momo" "$subscription_section" "success" > /dev/null 2>&1
+	uci_remove "momo" "$subscription_section" "error" > /dev/null 2>&1
 	# update subscription
 	log "Profile" "Update subscription: $subscription_name."
-	local success
+	local success subscription_curl_result subscription_error
 	local subscription_info_header_tmpfile; subscription_info_header_tmpfile="$TEMP_DIR/$subscription_section.info.header"
 	local subscription_header_tmpfile; subscription_header_tmpfile="$TEMP_DIR/$subscription_section.header"
 	local subscription_tmpfile; subscription_tmpfile="$TEMP_DIR/$subscription_section.json"
 	local subscription_info_file
-	local subscription_file; subscription_file="$SUBSCRIPTIONS_DIR/$subscription_section.json"
+	local subscription_file; subscription_file="$(subscription_output_file "$subscription_section")"
+	subscription_curl() {
+		local header_file output_file url
+		header_file="$1"
+		output_file="$2"
+		url="$3"
+		if [ "$subscription_allow_insecure" = 1 ] && [ -n "$subscription_proxy" ]; then
+			curl -s -f -m 120 --connect-timeout 15 --retry 3 -L -k -x "$subscription_proxy" -X GET -A "$subscription_user_agent" -D "$header_file" -o "$output_file" "$url" > /dev/null 2>&1
+		elif [ "$subscription_allow_insecure" = 1 ]; then
+			curl -s -f -m 120 --connect-timeout 15 --retry 3 -L -k -X GET -A "$subscription_user_agent" -D "$header_file" -o "$output_file" "$url" > /dev/null 2>&1
+		elif [ -n "$subscription_proxy" ]; then
+			curl -s -f -m 120 --connect-timeout 15 --retry 3 -L -x "$subscription_proxy" -X GET -A "$subscription_user_agent" -D "$header_file" -o "$output_file" "$url" > /dev/null 2>&1
+		else
+			curl -s -f -m 120 --connect-timeout 15 --retry 3 -L -X GET -A "$subscription_user_agent" -D "$header_file" -o "$output_file" "$url" > /dev/null 2>&1
+		fi
+	}
+	subscription_convert_curl() {
+		local header_file output_file list_value
+		header_file="$1"
+		output_file="$2"
+		list_value="$3"
+		[ -n "$list_value" ] || list_value="$subscription_convert_rule_provider"
+		if [ "$subscription_allow_insecure" = 1 ] && [ -n "$subscription_proxy" ]; then
+			curl -s -f -m 180 --connect-timeout 20 --retry 2 -L -G -k -x "$subscription_proxy" -A "$subscription_user_agent" -D "$header_file" -o "$output_file" \
+				--data-urlencode "target=$subscription_convert_target" \
+				--data-urlencode "url=$subscription_url" \
+				--data-urlencode "config=$subscription_convert_template" \
+				--data-urlencode "upload_path=$subscription_convert_custom_template" \
+				--data-urlencode "emoji=$subscription_convert_emoji" \
+				--data-urlencode "udp=$subscription_convert_udp" \
+				--data-urlencode "scv=$subscription_convert_skip_cert_verify" \
+				--data-urlencode "sort=$subscription_convert_sort" \
+				--data-urlencode "append_type=$subscription_convert_node_type" \
+				--data-urlencode "list=$list_value" \
+				--data-urlencode "include=$subscription_filter_keywords" \
+				--data-urlencode "exclude=$subscription_exclude_keywords" \
+				--data-urlencode "exclude_invalid=$subscription_exclude_invalid" \
+				"$subscription_convert_api" > /dev/null 2>&1
+		elif [ "$subscription_allow_insecure" = 1 ]; then
+			curl -s -f -m 180 --connect-timeout 20 --retry 2 -L -G -k -A "$subscription_user_agent" -D "$header_file" -o "$output_file" \
+				--data-urlencode "target=$subscription_convert_target" \
+				--data-urlencode "url=$subscription_url" \
+				--data-urlencode "config=$subscription_convert_template" \
+				--data-urlencode "upload_path=$subscription_convert_custom_template" \
+				--data-urlencode "emoji=$subscription_convert_emoji" \
+				--data-urlencode "udp=$subscription_convert_udp" \
+				--data-urlencode "scv=$subscription_convert_skip_cert_verify" \
+				--data-urlencode "sort=$subscription_convert_sort" \
+				--data-urlencode "append_type=$subscription_convert_node_type" \
+				--data-urlencode "list=$list_value" \
+				--data-urlencode "include=$subscription_filter_keywords" \
+				--data-urlencode "exclude=$subscription_exclude_keywords" \
+				--data-urlencode "exclude_invalid=$subscription_exclude_invalid" \
+				"$subscription_convert_api" > /dev/null 2>&1
+		elif [ -n "$subscription_proxy" ]; then
+			curl -s -f -m 180 --connect-timeout 20 --retry 2 -L -G -x "$subscription_proxy" -A "$subscription_user_agent" -D "$header_file" -o "$output_file" \
+				--data-urlencode "target=$subscription_convert_target" \
+				--data-urlencode "url=$subscription_url" \
+				--data-urlencode "config=$subscription_convert_template" \
+				--data-urlencode "upload_path=$subscription_convert_custom_template" \
+				--data-urlencode "emoji=$subscription_convert_emoji" \
+				--data-urlencode "udp=$subscription_convert_udp" \
+				--data-urlencode "scv=$subscription_convert_skip_cert_verify" \
+				--data-urlencode "sort=$subscription_convert_sort" \
+				--data-urlencode "append_type=$subscription_convert_node_type" \
+				--data-urlencode "list=$list_value" \
+				--data-urlencode "include=$subscription_filter_keywords" \
+				--data-urlencode "exclude=$subscription_exclude_keywords" \
+				--data-urlencode "exclude_invalid=$subscription_exclude_invalid" \
+				"$subscription_convert_api" > /dev/null 2>&1
+		else
+			curl -s -f -m 180 --connect-timeout 20 --retry 2 -L -G -A "$subscription_user_agent" -D "$header_file" -o "$output_file" \
+				--data-urlencode "target=$subscription_convert_target" \
+				--data-urlencode "url=$subscription_url" \
+				--data-urlencode "config=$subscription_convert_template" \
+				--data-urlencode "upload_path=$subscription_convert_custom_template" \
+				--data-urlencode "emoji=$subscription_convert_emoji" \
+				--data-urlencode "udp=$subscription_convert_udp" \
+				--data-urlencode "scv=$subscription_convert_skip_cert_verify" \
+				--data-urlencode "sort=$subscription_convert_sort" \
+				--data-urlencode "append_type=$subscription_convert_node_type" \
+				--data-urlencode "list=$list_value" \
+				--data-urlencode "include=$subscription_filter_keywords" \
+				--data-urlencode "exclude=$subscription_exclude_keywords" \
+				--data-urlencode "exclude_invalid=$subscription_exclude_invalid" \
+				"$subscription_convert_api" > /dev/null 2>&1
+		fi
+	}
+	subscription_validate_converted_file() {
+		local output_file check_log
+		output_file="$1"
+		check_log="$TEMP_DIR/$subscription_section.check"
+		if [ "$subscription_convert_target" != "singbox" ] || ! command -v sing-box > /dev/null 2>&1; then
+			return 0
+		fi
+		if sing-box check -c "$output_file" > "$check_log" 2>&1; then
+			rm -f "$check_log"
+			return 0
+		fi
+		subscription_error="$(tail -n 1 "$check_log" | sed 's/.*FATAL[^]]*] //')"
+		[ -n "$subscription_error" ] || subscription_error="Converted profile check failed"
+		rm -f "$check_log"
+		return 1
+	}
 	# fetch subscription info
 	if [ -n "$subscription_info_url" ]; then
 		log "Profile" "Fetch subscription info."
-		if curl -s -f -m 120 --connect-timeout 15 --retry 3 -L -X GET -A "$subscription_user_agent" -D "$subscription_info_header_tmpfile" "$subscription_info_url" > /dev/null 2>&1; then
+		if subscription_curl "$subscription_info_header_tmpfile" "/dev/null" "$subscription_info_url"; then
 			if [ ! -f "$subscription_info_file" ] && grep -q -i "subscription-userinfo:" "$subscription_info_header_tmpfile"; then
 				subscription_info_file="$subscription_info_header_tmpfile"
 			fi
@@ -520,16 +838,74 @@ update_subscription() {
 	fi
 	# download subscription
 	log "Profile" "Download subscription."
-	if curl -s -f -m 120 --connect-timeout 15 --retry 3 -L -X GET -A "$subscription_user_agent" -D "$subscription_header_tmpfile" -o "$subscription_tmpfile" "$subscription_url" > /dev/null 2>&1; then
-		log "Profile" "Subscription download successful."
-		if [ ! -f "$subscription_info_file" ] && grep -q -i "subscription-userinfo:" "$subscription_header_tmpfile"; then
-			subscription_info_file="$subscription_header_tmpfile"
+	local subscription_normalized subscription_validated
+	if [ "$subscription_convert" = 1 ]; then
+		log "Profile" "Convert subscription online."
+		if [ "$subscription_convert_target" = "singbox" ] && [ -n "$subscription_convert_template" ]; then
+			log "Profile" "Try subscription template rules."
+			subscription_curl_result=0
+			subscription_convert_curl "$subscription_header_tmpfile" "$subscription_tmpfile" "false" || subscription_curl_result="$?"
+			if [ "$subscription_curl_result" = 0 ]; then
+				if [ -f "$PROFILE_NORMALIZE_UC" ]; then
+					if ucode -S "$PROFILE_NORMALIZE_UC" "$subscription_tmpfile" > /dev/null 2>&1; then
+						subscription_normalized=1
+					else
+						log "Profile" "Failed to normalize subscription profile."
+					fi
+				fi
+				if subscription_validate_converted_file "$subscription_tmpfile"; then
+					subscription_validated=1
+				else
+					log "Profile" "Template rules check failed: $subscription_error."
+					subscription_curl_result=1
+				fi
+			fi
+			if [ "$subscription_curl_result" != 0 ]; then
+				log "Profile" "Fallback to node-list compatible conversion."
+				subscription_normalized=
+				subscription_validated=
+				subscription_curl_result=0
+				subscription_convert_curl "$subscription_header_tmpfile" "$subscription_tmpfile" "$subscription_convert_rule_provider" || subscription_curl_result="$?"
+			fi
+		else
+			subscription_curl_result=0
+			subscription_convert_curl "$subscription_header_tmpfile" "$subscription_tmpfile" "$subscription_convert_rule_provider" || subscription_curl_result="$?"
 		fi
-		log "Profile" "Subscription download successful."
-		success=1
+	else
+		subscription_curl_result=0
+		subscription_curl "$subscription_header_tmpfile" "$subscription_tmpfile" "$subscription_url" || subscription_curl_result="$?"
+	fi
+	if [ "$subscription_curl_result" = 0 ]; then
+		if [ -z "$subscription_normalized" ] && [ -f "$PROFILE_NORMALIZE_UC" ]; then
+			ucode -S "$PROFILE_NORMALIZE_UC" "$subscription_tmpfile" > /dev/null 2>&1 || log "Profile" "Failed to normalize subscription profile."
+		fi
+		if [ "$subscription_convert" = 1 ] && [ -z "$subscription_validated" ] && ! subscription_validate_converted_file "$subscription_tmpfile"; then
+			log "Profile" "Subscription convert check failed: $subscription_error."
+			success=0
+		else
+			log "Profile" "Subscription download successful."
+			if [ ! -f "$subscription_info_file" ] && grep -q -i "subscription-userinfo:" "$subscription_header_tmpfile"; then
+				subscription_info_file="$subscription_header_tmpfile"
+			fi
+			success=1
+		fi
 	else
 		log "Profile" "Subscription download failed."
+		subscription_error="Download failed"
 		success=0
+	fi
+	if [ "$success" = 1 ]; then
+		if [ -f "$PROFILE_RULES_UC" ]; then
+			if ! ucode -S "$PROFILE_RULES_UC" "$subscription_tmpfile" > /dev/null 2>&1; then
+				log "Profile" "Failed to apply route append rules."
+				subscription_error="Failed to apply route append rules"
+				success=0
+			fi
+		fi
+		if [ "$success" = 1 ] && ! subscription_validate_converted_file "$subscription_tmpfile"; then
+			log "Profile" "Route append rules check failed: $subscription_error."
+			success=0
+		fi
 	fi
 	# check if success
 	if [ "$success" = 1 ]; then
@@ -542,12 +918,12 @@ update_subscription() {
 			subscription_total=$(grep -i "subscription-userinfo: " "$subscription_info_file" | grep -i -o -E "total=[[:digit:]]+" | cut -d '=' -f 2)
 			if [ -n "$subscription_upload" ] && [ -n "$subscription_download" ]; then
 				subscription_used=$((subscription_upload + subscription_download))
-				if [ -n "$subscription_total" ]; then
-					subscription_avaliable=$((subscription_total - subscription_used))
-				fi
+			if [ -n "$subscription_total" ] && [ "$subscription_total" -gt 0 ]; then
+				subscription_avaliable=$((subscription_total - subscription_used))
+			fi
 			fi
 			# update subscription info
-			if [ -n "$subscription_expire" ]; then
+			if [ -n "$subscription_expire" ] && [ "$subscription_expire" -gt 0 ]; then
 				uci_set "momo" "$subscription_section" "expire" "$(date "+%Y-%m-%d %H:%M:%S" -d "@$subscription_expire")"
 			fi
 			if [ -n "$subscription_upload" ]; then
@@ -556,8 +932,10 @@ update_subscription() {
 			if [ -n "$subscription_download" ]; then
 				uci_set "momo" "$subscription_section" "download" "$(format_filesize "$subscription_download")"
 			fi
-			if [ -n "$subscription_total" ]; then
+			if [ -n "$subscription_total" ] && [ "$subscription_total" -gt 0 ]; then
 				uci_set "momo" "$subscription_section" "total" "$(format_filesize "$subscription_total")"
+			elif [ "$subscription_total" = 0 ]; then
+				uci_set "momo" "$subscription_section" "total" "不限"
 			fi
 			if [ -n "$subscription_used" ]; then
 				uci_set "momo" "$subscription_section" "used" "$(format_filesize "$subscription_used")"
@@ -569,17 +947,35 @@ update_subscription() {
 		uci_set "momo" "$subscription_section" "update" "$(date "+%Y-%m-%d %H:%M:%S")"
 		uci_set "momo" "$subscription_section" "success" "1"
 		# update subscription file
+		local old_output_file new_output_file legacy_subscription_file
+		config_get old_output_file "$subscription_section" "output_file"
+		new_output_file="$(basename "$subscription_file")"
+		legacy_subscription_file="$SUBSCRIPTIONS_DIR/$subscription_section.json"
+		uci_set "momo" "$subscription_section" "output_file" "$new_output_file"
+		if [ -n "$old_output_file" ] && [ "$old_output_file" != "$new_output_file" ]; then
+			rm -f "$SUBSCRIPTIONS_DIR/$old_output_file"
+		fi
+		if [ "$legacy_subscription_file" != "$subscription_file" ]; then
+			rm -f "$legacy_subscription_file"
+		fi
 		rm -f "$subscription_info_header_tmpfile"
 		rm -f "$subscription_header_tmpfile"
 		mv -f "$subscription_tmpfile" "$subscription_file"
+		$PROG -c "$subscription_file" format -w > /dev/null 2>&1 || log "Profile" "Failed to format subscription profile."
 	elif [ "$success" = 0 ]; then
 		log "Profile" "Subscription update failed."
 		# update subscription info
 		uci_set "momo" "$subscription_section" "success" "0"
+		uci_set "momo" "$subscription_section" "error" "${subscription_error:-Download failed}"
 		# remove tmpfile
 		rm -f "$subscription_info_header_tmpfile"
 		rm -f "$subscription_header_tmpfile"
 		rm -f "$subscription_tmpfile"
 	fi
 	uci_commit "momo"
+}
+
+update_subscriptions() {
+	config_load momo
+	config_foreach update_subscription subscription
 }

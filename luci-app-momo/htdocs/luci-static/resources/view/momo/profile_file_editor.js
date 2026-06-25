@@ -240,7 +240,21 @@ function saveFile(path, editor, restart) {
         momo.notify('运行配置是启动时生成的只读文件，不能直接保存。', 'warning');
         return Promise.resolve();
     }
-    return momo.writefile(path, editor.value()).then(function () {
+    const content = editor.value();
+    const shouldValidate = /\.json$/i.test(path);
+
+    return Promise.resolve(shouldValidate ? momo.validateProfile(content) : { success: true }).then(function (result) {
+        if (result && result.success === false) {
+            momo.notify('配置校验失败，已取消保存：' + (result.error || '未知错误'), 'danger');
+            return false;
+        }
+        return momo.writefile(path, content).then(function () {
+            return true;
+        });
+    }).then(function (saved) {
+        if (!saved) {
+            return;
+        }
         momo.notify(restart ? '配置已保存，正在重启服务' : '配置已保存', 'info');
         if (restart) {
             return momo.restart();

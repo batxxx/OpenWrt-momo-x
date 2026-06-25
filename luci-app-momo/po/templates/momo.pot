@@ -637,3 +637,87 @@ msgstr ""
 #: applications/luci-app-momo/htdocs/luci-static/resources/view/momo/app.js:128
 msgid "procd Config"
 msgstr ""
+
+msgid "Auto Disable QUIC GSO on Linux 6.6"
+msgstr ""
+
+msgid "Dummy Module"
+msgstr ""
+
+msgid "Enable ujail Sandbox"
+msgstr ""
+
+msgid "Firewall4"
+msgstr ""
+
+msgid "ip-full"
+msgstr ""
+
+msgid "Kernel Version"
+msgstr ""
+
+msgid "No"
+msgstr ""
+
+msgid "Runtime Features"
+msgstr ""
+
+msgid "sing-box Tags"
+msgstr ""
+
+msgid "TPROXY Module"
+msgstr ""
+
+msgid "TUN Module"
+msgstr ""
+
+msgid "ujail Sandbox"
+msgstr ""
+
+msgid "Yes"
+msgstr ""
+
+msgid "Allow Insecure"
+msgstr ""
+
+msgid "Download Proxy"
+msgstr ""
+
+msgid "Error"
+msgstr ""
+
+msgid "Failed"
+msgstr ""
+
+msgid "Remark"
+msgstr ""
+
+msgid "Scheduled Subscription Update"
+msgstr ""
+
+msgid "Scheduled Subscription Update Cron"
+msgstr ""
+
+msgid "Success"
+msgstr ""
+
+msgid "Update All Subscriptions"
+msgstr ""
+
+msgid "Subscription Management"
+msgstr ""
+
+msgid "Append Route Rules"
+msgstr ""
+
+msgid "Invalid JSON"
+msgstr ""
+
+msgid "Must be a JSON array"
+msgstr ""
+
+msgid "Prepend Route Rules"
+msgstr ""
+
+msgid "Route Config"
+msgstr ""

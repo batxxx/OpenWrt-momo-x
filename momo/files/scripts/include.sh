@@ -17,6 +17,8 @@ RUN_PROFILE_PATH="$RUN_DIR/config.json"
 UCODE_DIR="$HOME_DIR/ucode"
 INCLUDE_UC="$UCODE_DIR/include.uc"
 MIXIN_UC="$UCODE_DIR/mixin.uc"
+PROFILE_NORMALIZE_UC="$UCODE_DIR/profile_normalize.uc"
+PROFILE_RULES_UC="$UCODE_DIR/profile_rules.uc"
 HIJACK_UT="$UCODE_DIR/hijack.ut"
 
 ## scripts
@@ -56,6 +58,9 @@ get_paths() {
 
 	json_add_string ucode_dir "$UCODE_DIR"
 	json_add_string include_uc "$INCLUDE_UC"
+	json_add_string mixin_uc "$MIXIN_UC"
+	json_add_string profile_normalize_uc "$PROFILE_NORMALIZE_UC"
+	json_add_string profile_rules_uc "$PROFILE_RULES_UC"
 	json_add_string hijack_ut "$HIJACK_UT"
 
 	json_add_string sh_dir "$SH_DIR"

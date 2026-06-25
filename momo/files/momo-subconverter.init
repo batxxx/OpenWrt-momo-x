@@ -1,0 +1,40 @@
+#!/bin/sh /etc/rc.common
+
+START=98
+STOP=11
+USE_PROCD=1
+
+NAME="momo-subconverter"
+WORK_DIR="/etc/momo/subconverter"
+
+start_service() {
+	config_load momo
+
+	local enabled listen_port prog run_dir command
+	config_get_bool enabled "local_subconverter" "enabled" 0
+	config_get listen_port "local_subconverter" "port" "25500"
+
+	if [ "$enabled" = 0 ]; then
+		return
+	fi
+
+	if [ -x "$WORK_DIR/base/subconverter" ]; then
+		prog="$WORK_DIR/base/subconverter"
+		run_dir="$WORK_DIR/base"
+		command="cd '$run_dir' && sed -i 's/^port = .*/port = $listen_port/' pref.toml 2>/dev/null || true; export LD_LIBRARY_PATH='$WORK_DIR/lib'; exec '$prog'"
+	elif [ -x "$WORK_DIR/subconverter" ]; then
+		prog="$WORK_DIR/subconverter"
+		run_dir="$WORK_DIR"
+		command="cd '$run_dir' && exec '$prog' -p '$listen_port'"
+	else
+		logger -t "$NAME" "subconverter binary is not executable under $WORK_DIR"
+		return 1
+	fi
+
+	procd_open_instance "$NAME"
+	procd_set_param command /bin/sh -c "$command"
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_set_param respawn
+	procd_close_instance
+}

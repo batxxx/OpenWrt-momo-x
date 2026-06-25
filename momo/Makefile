@@ -29,9 +29,12 @@ define Package/momo/install
 	$(INSTALL_DIR) $(1)/etc/momo/profiles
 	$(INSTALL_DIR) $(1)/etc/momo/subscriptions
 	$(INSTALL_DIR) $(1)/etc/momo/run
+	$(INSTALL_DIR) $(1)/etc/capabilities
 
 	$(INSTALL_BIN) $(CURDIR)/files/ucode/include.uc $(1)/etc/momo/ucode/include.uc
 	$(INSTALL_BIN) $(CURDIR)/files/ucode/mixin.uc $(1)/etc/momo/ucode/mixin.uc
+	$(INSTALL_BIN) $(CURDIR)/files/ucode/profile_normalize.uc $(1)/etc/momo/ucode/profile_normalize.uc
+	$(INSTALL_BIN) $(CURDIR)/files/ucode/profile_rules.uc $(1)/etc/momo/ucode/profile_rules.uc
 	$(INSTALL_BIN) $(CURDIR)/files/ucode/hijack.ut $(1)/etc/momo/ucode/hijack.ut
 
 	$(INSTALL_BIN) $(CURDIR)/files/scripts/include.sh $(1)/etc/momo/scripts/include.sh
@@ -40,12 +43,14 @@ define Package/momo/install
 
 	$(INSTALL_BIN) $(CURDIR)/files/firewall/geoip_cn.nft $(1)/etc/momo/firewall/geoip_cn.nft
 	$(INSTALL_BIN) $(CURDIR)/files/firewall/geoip6_cn.nft $(1)/etc/momo/firewall/geoip6_cn.nft
+	$(INSTALL_DATA) $(CURDIR)/files/capabilities/momo.json $(1)/etc/capabilities/momo.json
 
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) $(CURDIR)/files/momo.conf $(1)/etc/config/momo
 
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) $(CURDIR)/files/momo.init $(1)/etc/init.d/momo
+	$(INSTALL_BIN) $(CURDIR)/files/momo-subconverter.init $(1)/etc/init.d/momo-subconverter
 
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) $(CURDIR)/files/uci-defaults/firewall.sh $(1)/etc/uci-defaults/99_firewall_momo

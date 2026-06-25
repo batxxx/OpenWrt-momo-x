@@ -8,7 +8,11 @@
                 "luci.momo": [ "*" ]
             },
             "file": {
+                "/etc/momo/profiles": ["list"],
+                "/etc/momo/subscriptions": ["list"],
                 "/etc/momo/profiles/*.json": ["read"],
+                "/etc/momo/profiles/*.yaml": ["read"],
+                "/etc/momo/profiles/*.yml": ["read"],
                 "/etc/momo/subscriptions/*.json": ["read"],
                 "/etc/momo/run/config.json": ["read"],
                 "/var/log/momo/*.log": ["read"]
@@ -17,9 +21,10 @@
         "write": {
             "uci": [ "momo" ],
             "file": {
-                "/etc/momo/profiles/*.json": ["write"],
-                "/etc/momo/subscriptions/*.json": ["write"],
-                "/etc/momo/run/config.json": ["write"],
+                "/etc/momo/profiles/*.json": ["write", "remove"],
+                "/etc/momo/profiles/*.yaml": ["write", "remove"],
+                "/etc/momo/profiles/*.yml": ["write", "remove"],
+                "/etc/momo/subscriptions/*.json": ["write", "remove"],
                 "/var/log/momo/*.log": ["write"]
             }
         }

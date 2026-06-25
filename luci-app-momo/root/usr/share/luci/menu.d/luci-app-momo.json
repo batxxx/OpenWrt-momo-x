@@ -22,7 +22,15 @@
         "order": 20,
         "action": {
             "type": "view",
-            "path": "momo/profile"
+            "path": "momo/profile_files"
+        }
+    },
+    "admin/services/momo/subscription": {
+        "title": "订阅管理",
+        "order": 25,
+        "action": {
+            "type": "view",
+            "path": "momo/subscription"
         }
     },
     "admin/services/momo/mixin": {
@@ -33,6 +41,22 @@
             "path": "momo/mixin"
         }
     },
+    "admin/services/momo/rules": {
+        "title": "规则配置",
+        "order": 35,
+        "action": {
+            "type": "view",
+            "path": "momo/rules_visual"
+        }
+    },
+    "admin/services/momo/rule_append": {
+        "title": "规则附加",
+        "order": 36,
+        "action": {
+            "type": "view",
+            "path": "momo/rule_append"
+        }
+    },
     "admin/services/momo/proxy": {
         "title": "Proxy Config",
         "order": 40,
@@ -41,13 +65,12 @@
             "path": "momo/proxy"
         }
     },
-    "admin/services/momo/editor": {
-        "title": "Editor",
-        "order": 50,
+    "admin/services/momo/profile/editor": {
         "action": {
             "type": "view",
-            "path": "momo/editor"
-        }
+            "path": "momo/profile_file_editor"
+        },
+        "firstchild_ineligible": true
     },
     "admin/services/momo/log": {
         "title": "Log",

@@ -3,8 +3,14 @@
 'require view';
 'require uci';
 'require network';
-'require tools.widgets as widgets';
 'require tools.momo as momo';
+
+function normalizeButtons(node) {
+    node.querySelectorAll('button').forEach(function (button) {
+        button.setAttribute('type', 'button');
+    });
+    return node;
+}
 
 return view.extend({
     load: function () {
@@ -26,47 +32,48 @@ return view.extend({
 
         m = new form.Map('momo');
 
-        s = m.section(form.NamedSection, 'proxy', 'proxy', _('Proxy Config'));
+        s = m.section(form.NamedSection, 'proxy', 'proxy', _('代理配置'));
+        s.description = _('这里控制透明代理、防火墙劫持、路由器自身代理和局域网设备代理。修改后需要保存并应用或重启服务才会生效。');
 
-        s.tab('proxy', _('Proxy Config'));
+        s.tab('proxy', _('透明代理'));
 
-        o = s.taboption('proxy', form.Flag, 'enabled', _('Enable'));
+        o = s.taboption('proxy', form.Flag, 'enabled', _('启用代理'));
         o.rmempty = false;
 
-        o = s.taboption('proxy', form.Flag, 'ipv4_dns_hijack', _('IPv4 DNS Hijack'));
+        o = s.taboption('proxy', form.Flag, 'ipv4_dns_hijack', _('劫持 IPv4 DNS'));
         o.rmempty = false;
 
-        o = s.taboption('proxy', form.Flag, 'ipv6_dns_hijack', _('IPv6 DNS Hijack'));
+        o = s.taboption('proxy', form.Flag, 'ipv6_dns_hijack', _('劫持 IPv6 DNS'));
         o.rmempty = false;
 
-        o = s.taboption('proxy', form.Flag, 'ipv4_proxy', _('IPv4 Proxy'));
+        o = s.taboption('proxy', form.Flag, 'ipv4_proxy', _('代理 IPv4 流量'));
         o.rmempty = false;
 
-        o = s.taboption('proxy', form.Flag, 'ipv6_proxy', _('IPv6 Proxy'));
+        o = s.taboption('proxy', form.Flag, 'ipv6_proxy', _('代理 IPv6 流量'));
         o.rmempty = false;
 
-        o = s.taboption('proxy', form.Flag, 'fake_ip_ping_hijack', _('Fake-IP Ping Hijack'));
+        o = s.taboption('proxy', form.Flag, 'fake_ip_ping_hijack', _('劫持 Fake-IP Ping'));
         o.rmempty = false;
 
-        o = s.taboption('proxy', form.ListValue, 'tcp_mode', _('TCP Mode'));
+        o = s.taboption('proxy', form.ListValue, 'tcp_mode', _('TCP 代理模式'));
         o.optional = true;
-        o.placeholder = _('Disable');
-        o.value('redirect', _('Redirect Mode'));
-        o.value('tproxy', _('TPROXY Mode'));
-        o.value('tun', _('TUN Mode'));
+        o.placeholder = _('禁用');
+        o.value('redirect', _('Redirect 模式'));
+        o.value('tproxy', _('TPROXY 模式'));
+        o.value('tun', _('TUN 模式'));
 
-        o = s.taboption('proxy', form.ListValue, 'udp_mode', _('UDP Mode'));
+        o = s.taboption('proxy', form.ListValue, 'udp_mode', _('UDP 代理模式'));
         o.optional = true;
-        o.placeholder = _('Disable');
-        o.value('tproxy', _('TPROXY Mode'));
-        o.value('tun', _('TUN Mode'));
+        o.placeholder = _('禁用');
+        o.value('tproxy', _('TPROXY 模式'));
+        o.value('tun', _('TUN 模式'));
 
-        s.tab('router', _('Router Proxy'));
+        s.tab('router', _('路由器自身代理'));
 
-        o = s.taboption('router', form.Flag, 'router_proxy', _('Enable'));
+        o = s.taboption('router', form.Flag, 'router_proxy', _('启用'));
         o.rmempty = false;
 
-        o = s.taboption('router', form.SectionValue, '_router_access_control', form.TableSection, 'router_access_control', _('Access Control'));
+        o = s.taboption('router', form.SectionValue, '_router_access_control', form.TableSection, 'router_access_control', _('访问控制'));
         o.retain = true;
         o.depends('router_proxy', '1');
 
@@ -74,17 +81,17 @@ return view.extend({
         o.subsection.anonymous = true;
         o.subsection.sortable = true;
 
-        so = o.subsection.option(form.Flag, 'enabled', _('Enable'));
+        so = o.subsection.option(form.Flag, 'enabled', _('启用'));
         so.default = '1';
         so.rmempty = false;
 
-        so = o.subsection.option(form.DynamicList, 'user', _('User'));
+        so = o.subsection.option(form.DynamicList, 'user', _('用户'));
 
         for (const user of users) {
             so.value(user);
         };
 
-        so = o.subsection.option(form.DynamicList, 'group', _('Group'));
+        so = o.subsection.option(form.DynamicList, 'group', _('用户组'));
 
         for (const group of groups) {
             so.value(group);
@@ -99,15 +106,15 @@ return view.extend({
         so = o.subsection.option(form.Flag, 'dns', _('DNS'));
         so.rmempty = false;
 
-        so = o.subsection.option(form.Flag, 'proxy', _('Proxy'));
+        so = o.subsection.option(form.Flag, 'proxy', _('代理'));
         so.rmempty = false;
 
-        s.tab('lan', _('LAN Proxy'));
+        s.tab('lan', _('局域网代理'));
 
-        o = s.taboption('lan', form.Flag, 'lan_proxy', _('Enable'));
+        o = s.taboption('lan', form.Flag, 'lan_proxy', _('启用'));
         o.rmempty = false;
 
-        o = s.taboption('lan', form.DynamicList, 'lan_inbound_interface', _('Inbound Interface'));
+        o = s.taboption('lan', form.DynamicList, 'lan_inbound_interface', _('入口接口'));
         o.retain = true;
         o.rmempty = false;
         o.depends('lan_proxy', '1');
@@ -119,7 +126,7 @@ return view.extend({
             o.value(network.getName());
         }
 
-        o = s.taboption('lan', form.SectionValue, '_lan_access_control', form.TableSection, 'lan_access_control', _('Access Control'));
+        o = s.taboption('lan', form.SectionValue, '_lan_access_control', form.TableSection, 'lan_access_control', _('访问控制'));
         o.retain = true;
         o.depends('lan_proxy', '1');
 
@@ -127,7 +134,7 @@ return view.extend({
         o.subsection.anonymous = true;
         o.subsection.sortable = true;
 
-        so = o.subsection.option(form.Flag, 'enabled', _('Enable'));
+        so = o.subsection.option(form.Flag, 'enabled', _('启用'));
         so.default = '1';
         so.rmempty = false;
 
@@ -165,48 +172,48 @@ return view.extend({
         so = o.subsection.option(form.Flag, 'dns', _('DNS'));
         so.rmempty = false;
 
-        so = o.subsection.option(form.Flag, 'proxy', _('Proxy'));
+        so = o.subsection.option(form.Flag, 'proxy', _('代理'));
         so.rmempty = false;
 
-        s.tab('bypass', _('Bypass'));
+        s.tab('bypass', _('绕过规则'));
 
-        o = s.taboption('bypass', form.Flag, 'bypass_china_mainland_ip', _('Bypass China Mainland IP'));
+        o = s.taboption('bypass', form.Flag, 'bypass_china_mainland_ip', _('绕过中国大陆 IPv4'));
         o.rmempty = false;
 
-        o = s.taboption('bypass', form.Flag, 'bypass_china_mainland_ip6', _('Bypass China Mainland IP6'));
+        o = s.taboption('bypass', form.Flag, 'bypass_china_mainland_ip6', _('绕过中国大陆 IPv6'));
         o.rmempty = false;
 
-        o = s.taboption('bypass', form.Value, 'proxy_tcp_dport', _('Destination TCP Port to Proxy'));
+        o = s.taboption('bypass', form.Value, 'proxy_tcp_dport', _('需要代理的 TCP 目标端口'));
         o.rmempty = false;
-        o.value('0-65535', _('All Port'));
-        o.value('21 22 80 110 143 194 443 465 853 993 995 8080 8443', _('Commonly Used Port'));
+        o.value('0-65535', _('所有端口'));
+        o.value('21 22 80 110 143 194 443 465 853 993 995 8080 8443', _('常用端口'));
 
-        o = s.taboption('bypass', form.Value, 'proxy_udp_dport', _('Destination UDP Port to Proxy'));
+        o = s.taboption('bypass', form.Value, 'proxy_udp_dport', _('需要代理的 UDP 目标端口'));
         o.rmempty = false;
-        o.value('0-65535', _('All Port'));
-        o.value('123 443 8443', _('Commonly Used Port'));
+        o.value('0-65535', _('所有端口'));
+        o.value('123 443 8443', _('常用端口'));
 
-        o = s.taboption('bypass', form.DynamicList, 'bypass_dscp', _('Bypass DSCP'));
+        o = s.taboption('bypass', form.DynamicList, 'bypass_dscp', _('绕过 DSCP'));
         o.datatype = 'range(0, 63)';
 
-        o = s.taboption('bypass', form.DynamicList, 'bypass_fwmark', _('Bypass FWMark'));
+        o = s.taboption('bypass', form.DynamicList, 'bypass_fwmark', _('绕过 FWMark'));
 
-        s.tab('misc', _('Misc'));
+        s.tab('misc', _('其他'));
 
-        o = s.taboption('misc', form.DynamicList, 'reserved_ip', _('Reserved IP'));
+        o = s.taboption('misc', form.DynamicList, 'reserved_ip', _('保留 IPv4'));
         o.datatype = 'ip4addr';
 
-        o = s.taboption('misc', form.DynamicList, 'reserved_ip6', _('Reserved IP6'));
+        o = s.taboption('misc', form.DynamicList, 'reserved_ip6', _('保留 IPv6'));
         o.datatype = 'ip6addr';
 
-        o = s.taboption('misc', form.Value, 'tun_timeout', _('TUN Timeout'));
+        o = s.taboption('misc', form.Value, 'tun_timeout', _('等待 TUN 设备超时(秒)'));
         o.datatype = 'uinteger';
         o.rmempty = false;
 
-        o = s.taboption('misc', form.Value, 'tun_interval', _('TUN Interval'));
+        o = s.taboption('misc', form.Value, 'tun_interval', _('检查 TUN 设备间隔(秒)'));
         o.datatype = 'uinteger';
         o.rmempty = false;
 
-        return m.render();
+        return m.render().then(normalizeButtons);
     }
 });
