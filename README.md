@@ -1,4 +1,4 @@
-![GitHub License](https://img.shields.io/github/license/nikkinikki-org/OpenWrt-momo?style=for-the-badge&logo=github) ![GitHub Tag](https://img.shields.io/github/v/release/nikkinikki-org/OpenWrt-momo?style=for-the-badge&logo=github) ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/nikkinikki-org/OpenWrt-momo/total?style=for-the-badge&logo=github) ![GitHub Repo stars](https://img.shields.io/github/stars/nikkinikki-org/OpenWrt-momo?style=for-the-badge&logo=github) [![Telegram](https://img.shields.io/badge/Telegram-gray?style=for-the-badge&logo=telegram)](https://t.me/nikkinikki_org)
+![GitHub License](https://img.shields.io/github/license/batxxx/OpenWrt-momo-x?style=for-the-badge&logo=github) ![GitHub Tag](https://img.shields.io/github/v/release/batxxx/OpenWrt-momo-x?style=for-the-badge&logo=github) ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/batxxx/OpenWrt-momo-x/total?style=for-the-badge&logo=github) ![GitHub Repo stars](https://img.shields.io/github/stars/batxxx/OpenWrt-momo-x?style=for-the-badge&logo=github) [![Telegram](https://img.shields.io/badge/Telegram-gray?style=for-the-badge&logo=telegram)](https://t.me/nikkinikki_org)
 
 English | [中文](README.zh.md)
 
@@ -45,7 +45,7 @@ Recommended packages:
 Add the feed once:
 
 ```sh
-wget -O - https://github.com/nikkinikki-org/OpenWrt-momo/raw/refs/heads/main/feed.sh | ash
+wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/feed.sh | ash
 ```
 
 Install packages:
@@ -63,7 +63,7 @@ apk add momo luci-app-momo luci-i18n-momo-zh-cn
 ### Install From Release
 
 ```sh
-wget -O - https://github.com/nikkinikki-org/OpenWrt-momo/raw/refs/heads/main/install.sh | ash
+wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.sh | ash
 ```
 
 ## Quick Start
@@ -275,13 +275,13 @@ Then confirm that proxy mode and DNS hijack are enabled in `Proxy Config`.
 ## Uninstall and Reset
 
 ```sh
-wget -O - https://github.com/nikkinikki-org/OpenWrt-momo/raw/refs/heads/main/uninstall.sh | ash
+wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/uninstall.sh | ash
 ```
 
 ## Build
 
 ```sh
-echo "src-git momo https://github.com/nikkinikki-org/OpenWrt-momo.git;main" >> feeds.conf.default
+echo "src-git momo https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
 ./scripts/feeds update -a
 ./scripts/feeds install -a
 make package/luci-app-momo/compile
@@ -302,4 +302,4 @@ Package files will be generated under `bin/packages/<architecture>/momo`.
 
 ## Contributors
 
-[![Contributors](https://contrib.rocks/image?repo=nikkinikki-org/OpenWrt-momo)](https://github.com/nikkinikki-org/OpenWrt-momo/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=batxxx/OpenWrt-momo-x)](https://github.com/batxxx/OpenWrt-momo-x/graphs/contributors)

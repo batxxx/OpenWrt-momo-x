@@ -1,4 +1,4 @@
-![GitHub License](https://img.shields.io/github/license/nikkinikki-org/OpenWrt-momo?style=for-the-badge&logo=github) ![GitHub Tag](https://img.shields.io/github/v/release/nikkinikki-org/OpenWrt-momo?style=for-the-badge&logo=github) ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/nikkinikki-org/OpenWrt-momo/total?style=for-the-badge&logo=github) ![GitHub Repo stars](https://img.shields.io/github/stars/nikkinikki-org/OpenWrt-momo?style=for-the-badge&logo=github) [![Telegram](https://img.shields.io/badge/Telegram-gray?style=for-the-badge&logo=telegram)](https://t.me/nikkinikki_org)
+![GitHub License](https://img.shields.io/github/license/batxxx/OpenWrt-momo-x?style=for-the-badge&logo=github) ![GitHub Tag](https://img.shields.io/github/v/release/batxxx/OpenWrt-momo-x?style=for-the-badge&logo=github) ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/batxxx/OpenWrt-momo-x/total?style=for-the-badge&logo=github) ![GitHub Repo stars](https://img.shields.io/github/stars/batxxx/OpenWrt-momo-x?style=for-the-badge&logo=github) [![Telegram](https://img.shields.io/badge/Telegram-gray?style=for-the-badge&logo=telegram)](https://t.me/nikkinikki_org)
 
 中文 | [English](README.md)
 
@@ -45,7 +45,7 @@ Momo 是一个在 OpenWrt 上运行 sing-box 透明代理的 LuCI 应用和服�
 添加软件源，只需要运行一次：
 
 ```sh
-wget -O - https://github.com/nikkinikki-org/OpenWrt-momo/raw/refs/heads/main/feed.sh | ash
+wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/feed.sh | ash
 ```
 
 安装软件包：
@@ -63,7 +63,7 @@ apk add momo luci-app-momo luci-i18n-momo-zh-cn
 ### 从 Release 安装
 
 ```sh
-wget -O - https://github.com/nikkinikki-org/OpenWrt-momo/raw/refs/heads/main/install.sh | ash
+wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.sh | ash
 ```
 
 ## 快速开始
@@ -275,13 +275,13 @@ ip -6 rule show
 ## 卸载并重置
 
 ```sh
-wget -O - https://github.com/nikkinikki-org/OpenWrt-momo/raw/refs/heads/main/uninstall.sh | ash
+wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/uninstall.sh | ash
 ```
 
 ## 编译
 
 ```sh
-echo "src-git momo https://github.com/nikkinikki-org/OpenWrt-momo.git;main" >> feeds.conf.default
+echo "src-git momo https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
 ./scripts/feeds update -a
 ./scripts/feeds install -a
 make package/luci-app-momo/compile
@@ -302,4 +302,4 @@ make package/luci-app-momo/compile
 
 ## 贡献者
 
-[![贡献者](https://contrib.rocks/image?repo=nikkinikki-org/OpenWrt-momo)](https://github.com/nikkinikki-org/OpenWrt-momo/graphs/contributors)
+[![贡献者](https://contrib.rocks/image?repo=batxxx/OpenWrt-momo-x)](https://github.com/batxxx/OpenWrt-momo-x/graphs/contributors)
