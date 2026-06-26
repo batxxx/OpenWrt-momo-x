@@ -57,7 +57,30 @@ https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo-x/
 当前公开构建只发布 opkg/ipk 软件包。
 手动运行 `Actions` -> `release-packages` 时，可以填写 `release_tag` 作为要发布的版本号，例如 `v1.2.3`。
 
-### 一键安装
+### 方式一：离线安装 IPK 文件
+
+适合先下载 `.ipk` 文件，再手动上传到路由器安装。
+
+1. 打开本仓库的 `Releases` 页面。
+2. 下载 `openwrt-24.10 x86_64` 对应的全部 `.ipk` 软件包。
+3. 将 `.ipk` 文件上传到路由器，例如 `/tmp/momo-x/`。
+4. 一次性安装全部软件包：
+
+```sh
+cd /tmp/momo-x
+opkg update
+opkg install ./*.ipk
+```
+
+如果在 LuCI 图形界面一个一个上传安装，建议按这个顺序：
+
+1. `momo-x_*.ipk`
+2. `momo-x-subconverter_*.ipk`
+3. `luci-app-momo_*.ipk`
+4. `luci-i18n-momo-zh-cn_*.ipk`
+5. `momo-x-full_*.ipk`
+
+### 方式二：直接使用脚本安装
 
 支持的系统可以直接运行：
 
@@ -67,33 +90,25 @@ wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.s
 
 这个脚本会自动添加软件包签名密钥、添加 GitHub Pages 软件源、更新软件包索引，并安装 `momo-x-full`。`momo-x-full` 入口包会安装 Momo-X、LuCI、中文翻译和本地 subconverter 软件包。
 
-### 手动添加软件源安装
+### 方式三：添加软件源后安装
 
-如果只想先添加软件源，不立即安装，可以运行：
+运行下面这条命令添加 Momo-X GitHub Pages 软件源：
 
 ```sh
-wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/feed.sh | ash
+wget -O /tmp/momo-x-key.pub https://batxxx.github.io/OpenWrt-momo-x/key-build.pub && opkg-key add /tmp/momo-x-key.pub && rm -f /tmp/momo-x-key.pub && sed -i '/src\/gz momo-x /d;/src\/gz momo /d' /etc/opkg/customfeeds.conf && echo "src/gz momo-x https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo-x" >> /etc/opkg/customfeeds.conf && opkg update
 ```
 
-安装软件包：
+然后安装 Momo-X：
 
 ```sh
-opkg update
 opkg install momo-x-full
 ```
 
-### 从 GitHub Releases 下载安装
-
-如果需要直接下载原始软件包文件，可以从 Releases 页面下载：
-
-1. 打开本仓库的 `Releases` 页面。
-2. 下载 `openwrt-24.10 x86_64` 对应的全部 `.ipk` 软件包。
-3. 将 `.ipk` 软件包上传到路由器。
-4. 一次性安装下载的所有 Momo-X 软件包：
+也可以使用软件源辅助脚本代替上面较长的添加软件源命令：
 
 ```sh
-opkg update
-opkg install ./*.ipk
+wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/feed.sh | ash
+opkg install momo-x-full
 ```
 
 ### 使用 GitHub Actions 产物安装

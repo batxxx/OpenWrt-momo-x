@@ -57,7 +57,30 @@ The current release workflow publishes `OpenWrt 24.10` packages for `x86_64`.
 The current public build publishes opkg/ipk packages only.
 When manually running `Actions` -> `release-packages`, set `release_tag` to the version you want to publish, for example `v1.2.3`.
 
-### One-Command Install
+### Method 1: Offline Install With IPK Files
+
+Use this method when you want to download the `.ipk` files first and install them manually.
+
+1. Open `Releases` in this repository.
+2. Download all `.ipk` package files for `openwrt-24.10 x86_64`.
+3. Copy the `.ipk` files to the router, for example `/tmp/momo-x/`.
+4. Install all packages together:
+
+```sh
+cd /tmp/momo-x
+opkg update
+opkg install ./*.ipk
+```
+
+If installing one by one from the LuCI upload page, install in this order:
+
+1. `momo-x_*.ipk`
+2. `momo-x-subconverter_*.ipk`
+3. `luci-app-momo_*.ipk`
+4. `luci-i18n-momo-zh-cn_*.ipk`
+5. `momo-x-full_*.ipk`
+
+### Method 2: Direct Script Install
 
 For supported systems, run:
 
@@ -67,33 +90,25 @@ wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.s
 
 This script adds the package signing key, adds the GitHub Pages feed, updates the package index, and installs `momo-x-full`. The `momo-x-full` entry package installs Momo-X, LuCI, Chinese translation, and the local subconverter package.
 
-### Manual Feed Install
+### Method 3: Add Feed, Then Install
 
-To add the feed without installing immediately, run:
+Run this command to add the Momo-X GitHub Pages feed:
 
 ```sh
-wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/feed.sh | ash
+wget -O /tmp/momo-x-key.pub https://batxxx.github.io/OpenWrt-momo-x/key-build.pub && opkg-key add /tmp/momo-x-key.pub && rm -f /tmp/momo-x-key.pub && sed -i '/src\/gz momo-x /d;/src\/gz momo /d' /etc/opkg/customfeeds.conf && echo "src/gz momo-x https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo-x" >> /etc/opkg/customfeeds.conf && opkg update
 ```
 
-Install packages:
+Then install Momo-X:
 
 ```sh
-opkg update
 opkg install momo-x-full
 ```
 
-### Install From GitHub Releases
-
-If you need the raw package files, download them from the Releases page:
-
-1. Open `Releases` in this repository.
-2. Download all `.ipk` package files for `openwrt-24.10 x86_64`.
-3. Copy the `.ipk` packages to the router.
-4. Install all downloaded Momo-X packages together:
+You can also run the feed helper script instead of the long feed command:
 
 ```sh
-opkg update
-opkg install ./*.ipk
+wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/feed.sh | ash
+opkg install momo-x-full
 ```
 
 ### Install From GitHub Actions Artifacts
