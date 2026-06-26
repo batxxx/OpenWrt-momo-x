@@ -63,6 +63,8 @@ After the workflow finishes, the feed is published at:
 https://batxxx.github.io/OpenWrt-momo-x
 ```
 
+The current release workflow publishes the `x86_64` packages for `openwrt-24.10`.
+
 ### Install From Feed
 
 After the GitHub Pages feed has been published, add the feed once:
@@ -96,7 +98,7 @@ wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.s
 If the feed has not been published yet, use the build artifact directly:
 
 1. Open `Actions` in this repository.
-2. Run the `build-packages` workflow for the target OpenWrt branch and architecture.
+2. Run the `build-packages` workflow.
 3. Download the generated artifact.
 4. Copy the `.ipk` or `.apk` packages to the router.
 5. Install them manually:
