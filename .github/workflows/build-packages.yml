@@ -23,7 +23,7 @@ jobs:
         uses: openwrt/gh-action-sdk@main
         env:
           ARCH: ${{ matrix.arch }}-${{ matrix.branch }}
-          FEEDNAME: momo-x
+          FEEDNAME: momox
           PACKAGES: momo-x-full
           NO_REFRESH_CHECK: true
 
@@ -31,4 +31,4 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: momo-x_${{ matrix.arch }}-${{ matrix.branch }}
-          path: bin/packages/${{ matrix.arch }}/momo-x
+          path: bin/packages/${{ matrix.arch }}/momox

@@ -131,14 +131,14 @@ opkg install ./*.ipk
 In an OpenWrt SDK or buildroot:
 
 ```sh
-echo "src-git momo-x https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
-./scripts/feeds update momo-x
-./scripts/feeds install -a -p momo-x
+echo "src-git momox https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
+./scripts/feeds update momox
+./scripts/feeds install -a -p momox
 
-make package/feeds/momo-x/momo/compile V=s
-make package/feeds/momo-x/momo-subconverter/compile V=s
-make package/feeds/momo-x/luci-app-momo/compile V=s
-make package/feeds/momo-x/momo-full/compile V=s
+make package/feeds/momox/momo/compile V=s
+make package/feeds/momox/momo-subconverter/compile V=s
+make package/feeds/momox/luci-app-momo/compile V=s
+make package/feeds/momox/momo-full/compile V=s
 ```
 
 The generated packages are under `bin/packages/<architecture>/momo-x`. Copy the generated Momo-X packages to the router and install them together:
@@ -363,13 +363,13 @@ wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/uninstall
 ## Build
 
 ```sh
-echo "src-git momo-x https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
-./scripts/feeds update momo-x
-./scripts/feeds install -a -p momo-x
-make package/feeds/momo-x/momo/compile V=s
-make package/feeds/momo-x/momo-subconverter/compile V=s
-make package/feeds/momo-x/luci-app-momo/compile V=s
-make package/feeds/momo-x/momo-full/compile V=s
+echo "src-git momox https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
+./scripts/feeds update momox
+./scripts/feeds install -a -p momox
+make package/feeds/momox/momo/compile V=s
+make package/feeds/momox/momo-subconverter/compile V=s
+make package/feeds/momox/luci-app-momo/compile V=s
+make package/feeds/momox/momo-full/compile V=s
 ```
 
 Package files will be generated under `bin/packages/<architecture>/momo-x`.

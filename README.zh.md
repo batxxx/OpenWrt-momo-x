@@ -131,14 +131,14 @@ opkg install ./*.ipk
 在 OpenWrt SDK 或完整 buildroot 中执行：
 
 ```sh
-echo "src-git momo-x https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
-./scripts/feeds update momo-x
-./scripts/feeds install -a -p momo-x
+echo "src-git momox https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
+./scripts/feeds update momox
+./scripts/feeds install -a -p momox
 
-make package/feeds/momo-x/momo/compile V=s
-make package/feeds/momo-x/momo-subconverter/compile V=s
-make package/feeds/momo-x/luci-app-momo/compile V=s
-make package/feeds/momo-x/momo-full/compile V=s
+make package/feeds/momox/momo/compile V=s
+make package/feeds/momox/momo-subconverter/compile V=s
+make package/feeds/momox/luci-app-momo/compile V=s
+make package/feeds/momox/momo-full/compile V=s
 ```
 
 编译后的软件包位于 `bin/packages/<architecture>/momo-x`。把生成的 Momo-X 软件包上传到路由器后一次性安装：
@@ -363,13 +363,13 @@ wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/uninstall
 ## 编译
 
 ```sh
-echo "src-git momo-x https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
-./scripts/feeds update momo-x
-./scripts/feeds install -a -p momo-x
-make package/feeds/momo-x/momo/compile V=s
-make package/feeds/momo-x/momo-subconverter/compile V=s
-make package/feeds/momo-x/luci-app-momo/compile V=s
-make package/feeds/momo-x/momo-full/compile V=s
+echo "src-git momox https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
+./scripts/feeds update momox
+./scripts/feeds install -a -p momox
+make package/feeds/momox/momo/compile V=s
+make package/feeds/momox/momo-subconverter/compile V=s
+make package/feeds/momox/luci-app-momo/compile V=s
+make package/feeds/momox/momo-full/compile V=s
 ```
 
 编译后的软件包位于 `bin/packages/<architecture>/momo-x`。

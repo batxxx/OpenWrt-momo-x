@@ -42,7 +42,7 @@ jobs:
         uses: openwrt/gh-action-sdk@main
         env:
           ARCH: ${{ matrix.arch }}-${{ matrix.branch }}
-          FEEDNAME: momo-x
+          FEEDNAME: momox
           PACKAGES: momo-x-full
           INDEX: 1
           KEY_BUILD: ${{ secrets.KEY_BUILD }}
@@ -51,9 +51,9 @@ jobs:
 
       - name: compress
         run: |
-          tar -c -z -f momo-x_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz -C bin/packages/${{ matrix.arch }}/momo-x .
-          mkdir -p public/${{ matrix.branch }}/${{ matrix.arch }}
-          mv bin/packages/${{ matrix.arch }}/momo-x public/${{ matrix.branch }}/${{ matrix.arch }}
+          tar -c -z -f momo-x_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz -C bin/packages/${{ matrix.arch }}/momox .
+          mkdir -p public/${{ matrix.branch }}/${{ matrix.arch }}/momo-x
+          cp -a bin/packages/${{ matrix.arch }}/momox/. public/${{ matrix.branch }}/${{ matrix.arch }}/momo-x/
           tar -c -z -f feed_momo-x_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz public/${{ matrix.branch }}/${{ matrix.arch }}
 
       - name: upload
