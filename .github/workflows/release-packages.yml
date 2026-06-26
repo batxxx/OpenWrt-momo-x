@@ -73,6 +73,11 @@ jobs:
             bin/packages/${{ matrix.arch }}/momox
           if-no-files-found: ignore
 
+      - name: install feed tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y usign
+
       - name: create feed index
         run: |
           set -eu
