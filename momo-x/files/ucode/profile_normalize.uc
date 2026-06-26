@@ -43,6 +43,10 @@ function normalize_outbound_compat(outbound) {
 	if (outbound.type == 'dns') {
 		return false;
 	}
+	if (outbound.plugin != null || outbound.plugin_opts != null) {
+		// ponytail: sing-box package here has no external SIP003 plugins; drop those nodes instead of failing the whole profile.
+		return false;
+	}
 
 	if (outbound.sni != null) {
 		if (outbound.tls == null || type(outbound.tls) != 'object') {
