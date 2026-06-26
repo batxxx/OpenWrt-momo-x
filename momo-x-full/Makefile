@@ -15,6 +15,7 @@ define Package/momo-x-full
   TITLE:=Complete Momo-X installation entry package
   URL:=https://github.com/batxxx/OpenWrt-momo-x
   DEPENDS:=+momo-x +momo-x-subconverter +luci-app-momo +luci-i18n-momo-zh-cn
+  CONFLICTS:=momo-full
   PKGARCH:=all
 endef
 

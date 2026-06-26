@@ -2,19 +2,21 @@
 
 # uninstall
 if [ -x "/bin/opkg" ]; then
+	opkg remove momo-x-full momo-full
 	for pkg in $(opkg list-installed luci-i18n-momo-* | cut -d ' ' -f 1); do
 		opkg remove "$pkg"
 	done
 	opkg remove luci-app-momo
-	opkg remove momo-x-full momo-x-subconverter momo-x
-	opkg remove momo-full momo-subconverter momo
+	opkg remove momo-x-subconverter momo-subconverter
+	opkg remove momo-x momo
 elif [ -x "/usr/bin/apk" ]; then
+	apk del momo-x-full momo-full
 	for pkg in $(apk list --installed --manifest luci-i18n-momo-* | cut -d ' ' -f 1); do
 		apk del "$pkg"
 	done
 	apk del luci-app-momo
-	apk del momo-x-full momo-x-subconverter momo-x
-	apk del momo-full momo-subconverter momo
+	apk del momo-x-subconverter momo-subconverter
+	apk del momo-x momo
 fi
 # remove config
 rm -f /etc/config/momo

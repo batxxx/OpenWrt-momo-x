@@ -95,7 +95,7 @@ wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.s
 运行下面这条命令添加 Momo-X GitHub Pages 软件源：
 
 ```sh
-wget -O /tmp/momo-x-key.pub https://batxxx.github.io/OpenWrt-momo-x/key-build.pub && opkg-key add /tmp/momo-x-key.pub && rm -f /tmp/momo-x-key.pub && sed -i '/src\/gz momo-x /d;/src\/gz momo /d' /etc/opkg/customfeeds.conf && echo "src/gz momo-x https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo-x" >> /etc/opkg/customfeeds.conf && opkg update
+wget -O /tmp/momo-x-key.pub https://batxxx.github.io/OpenWrt-momo-x/key-build.pub && opkg-key add /tmp/momo-x-key.pub && rm -f /tmp/momo-x-key.pub && touch /etc/opkg/customfeeds.conf && sed -i '/src\/gz momo-x /d;/src\/gz momo /d' /etc/opkg/customfeeds.conf && echo "src/gz momo-x https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo-x" >> /etc/opkg/customfeeds.conf && opkg update
 ```
 
 然后安装 Momo-X：

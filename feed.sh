@@ -34,6 +34,7 @@ repository_url="${MOMO_REPOSITORY_URL:-https://batxxx.github.io/OpenWrt-momo-x}"
 feed_url="$repository_url/$branch/$arch/momo-x"
 
 if [ -x "/bin/opkg" ]; then
+	touch /etc/opkg/customfeeds.conf
 	# add key
 	echo "add key"
 	key_build_pub_file="key-build.pub"

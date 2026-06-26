@@ -95,7 +95,7 @@ This script adds the package signing key, adds the GitHub Pages feed, updates th
 Run this command to add the Momo-X GitHub Pages feed:
 
 ```sh
-wget -O /tmp/momo-x-key.pub https://batxxx.github.io/OpenWrt-momo-x/key-build.pub && opkg-key add /tmp/momo-x-key.pub && rm -f /tmp/momo-x-key.pub && sed -i '/src\/gz momo-x /d;/src\/gz momo /d' /etc/opkg/customfeeds.conf && echo "src/gz momo-x https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo-x" >> /etc/opkg/customfeeds.conf && opkg update
+wget -O /tmp/momo-x-key.pub https://batxxx.github.io/OpenWrt-momo-x/key-build.pub && opkg-key add /tmp/momo-x-key.pub && rm -f /tmp/momo-x-key.pub && touch /etc/opkg/customfeeds.conf && sed -i '/src\/gz momo-x /d;/src\/gz momo /d' /etc/opkg/customfeeds.conf && echo "src/gz momo-x https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo-x" >> /etc/opkg/customfeeds.conf && opkg update
 ```
 
 Then install Momo-X:

@@ -20,6 +20,7 @@ define Package/momo-x-subconverter
   TITLE:=Local subconverter service files for Momo-X
   URL:=https://github.com/tindy2013/subconverter
   DEPENDS:=+momo-x
+  CONFLICTS:=momo-subconverter
 endef
 
 define Package/momo-x-subconverter/description

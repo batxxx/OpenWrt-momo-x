@@ -15,6 +15,7 @@ define Package/momo-x
   TITLE:=Transparent Proxy with sing-box on OpenWrt.
   URL:=https://github.com/batxxx/OpenWrt-momo-x
   DEPENDS:=+ca-bundle +curl firewall4 +ip-full +kmod-inet-diag +kmod-nft-socket +kmod-nft-tproxy +kmod-tun +kmod-dummy +sing-box
+  CONFLICTS:=momo
 endef
 
 define Package/momo-x/conffiles

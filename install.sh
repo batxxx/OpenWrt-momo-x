@@ -34,6 +34,7 @@ repository_url="${MOMO_REPOSITORY_URL:-https://batxxx.github.io/OpenWrt-momo-x}"
 feed_url="$repository_url/$branch/$arch/momo-x"
 
 if [ -x "/bin/opkg" ]; then
+	touch /etc/opkg/customfeeds.conf
 	# add key
 	echo "add key"
 	key_build_pub_file="key-build.pub"
@@ -49,6 +50,13 @@ if [ -x "/bin/opkg" ]; then
 	# update feeds
 	echo "update feeds"
 	opkg update
+	# remove legacy pre-Momo-X packages before installing renamed packages
+	if opkg list-installed momo 2>/dev/null | grep -q '^momo -'; then
+		echo "remove legacy momo packages"
+		for pkg in momo-full $(opkg list-installed luci-i18n-momo-* 2>/dev/null | cut -d ' ' -f 1) luci-app-momo momo-subconverter momo; do
+			[ -n "$pkg" ] && opkg remove "$pkg" 2>/dev/null || true
+		done
+	fi
 	# install entry package from feed
 	echo "install momo-x-full"
 	opkg install momo-x-full
