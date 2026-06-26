@@ -37,6 +37,7 @@ define Package/momo-x/install
 	$(INSTALL_BIN) $(CURDIR)/files/ucode/mixin.uc $(1)/etc/momo/ucode/mixin.uc
 	$(INSTALL_BIN) $(CURDIR)/files/ucode/profile_normalize.uc $(1)/etc/momo/ucode/profile_normalize.uc
 	$(INSTALL_BIN) $(CURDIR)/files/ucode/profile_rules.uc $(1)/etc/momo/ucode/profile_rules.uc
+	$(INSTALL_BIN) $(CURDIR)/files/ucode/share_links_to_singbox.uc $(1)/etc/momo/ucode/share_links_to_singbox.uc
 	$(INSTALL_BIN) $(CURDIR)/files/ucode/hijack.ut $(1)/etc/momo/ucode/hijack.ut
 
 	$(INSTALL_BIN) $(CURDIR)/files/scripts/include.sh $(1)/etc/momo/scripts/include.sh

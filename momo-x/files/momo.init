@@ -827,6 +827,31 @@ update_subscription() {
 		rm -f "$check_log"
 		return 1
 	}
+
+	subscription_parse_share_links() {
+		local raw_file parser_log
+		raw_file="$TEMP_DIR/$subscription_section.raw"
+		parser_log="$TEMP_DIR/$subscription_section.share-links.log"
+		[ "$subscription_convert_target" = "singbox" ] || return 1
+		[ -f "$SHARE_LINKS_TO_SINGBOX_UC" ] || return 1
+		log "Profile" "Try built-in share-link parser."
+		if ! subscription_curl "$subscription_header_tmpfile" "$raw_file" "$subscription_url"; then
+			subscription_error="Download failed"
+			rm -f "$raw_file" "$parser_log"
+			return 1
+		fi
+		if ucode -S "$SHARE_LINKS_TO_SINGBOX_UC" "$raw_file" "$subscription_tmpfile" > /dev/null 2> "$parser_log"; then
+			rm -f "$raw_file" "$parser_log"
+			subscription_normalized=
+			subscription_validated=
+			subscription_curl_result=0
+			return 0
+		fi
+		subscription_error="$(tail -n 1 "$parser_log" 2>/dev/null)"
+		[ -n "$subscription_error" ] || subscription_error="No supported share links were found"
+		rm -f "$raw_file" "$parser_log"
+		return 1
+	}
 	# fetch subscription info
 	if [ -n "$subscription_info_url" ]; then
 		log "Profile" "Fetch subscription info."
@@ -875,13 +900,29 @@ update_subscription() {
 		subscription_curl_result=0
 		subscription_curl "$subscription_header_tmpfile" "$subscription_tmpfile" "$subscription_url" || subscription_curl_result="$?"
 	fi
+	if [ "$subscription_convert" = 1 ] && [ "$subscription_convert_target" = "singbox" ] && [ "$subscription_curl_result" != 0 ]; then
+		subscription_parse_share_links || true
+	fi
 	if [ "$subscription_curl_result" = 0 ]; then
 		if [ -z "$subscription_normalized" ] && [ -f "$PROFILE_NORMALIZE_UC" ]; then
 			ucode -S "$PROFILE_NORMALIZE_UC" "$subscription_tmpfile" > /dev/null 2>&1 || log "Profile" "Failed to normalize subscription profile."
 		fi
 		if [ "$subscription_convert" = 1 ] && [ -z "$subscription_validated" ] && ! subscription_validate_converted_file "$subscription_tmpfile"; then
 			log "Profile" "Subscription convert check failed: $subscription_error."
-			success=0
+			if subscription_parse_share_links; then
+				if [ -f "$PROFILE_NORMALIZE_UC" ]; then
+					ucode -S "$PROFILE_NORMALIZE_UC" "$subscription_tmpfile" > /dev/null 2>&1 || log "Profile" "Failed to normalize parsed share-link profile."
+				fi
+				if subscription_validate_converted_file "$subscription_tmpfile"; then
+					log "Profile" "Built-in share-link parser succeeded."
+					success=1
+				else
+					log "Profile" "Built-in share-link parser check failed: $subscription_error."
+					success=0
+				fi
+			else
+				success=0
+			fi
 		else
 			log "Profile" "Subscription download successful."
 			if [ ! -f "$subscription_info_file" ] && grep -q -i "subscription-userinfo:" "$subscription_header_tmpfile"; then
@@ -918,9 +959,9 @@ update_subscription() {
 			subscription_total=$(grep -i "subscription-userinfo: " "$subscription_info_file" | grep -i -o -E "total=[[:digit:]]+" | cut -d '=' -f 2)
 			if [ -n "$subscription_upload" ] && [ -n "$subscription_download" ]; then
 				subscription_used=$((subscription_upload + subscription_download))
-			if [ -n "$subscription_total" ] && [ "$subscription_total" -gt 0 ]; then
-				subscription_avaliable=$((subscription_total - subscription_used))
-			fi
+				if [ -n "$subscription_total" ] && [ "$subscription_total" -gt 0 ]; then
+					subscription_avaliable=$((subscription_total - subscription_used))
+				fi
 			fi
 			# update subscription info
 			if [ -n "$subscription_expire" ] && [ "$subscription_expire" -gt 0 ]; then
