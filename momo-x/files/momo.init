@@ -978,7 +978,7 @@ update_subscription() {
 			fi
 			if [ "$subscription_curl_result" != 0 ]; then
 				if subscription_local_convert_api && [ ! -s "$subscription_tmpfile" ]; then
-					log "Profile" "Local converter returned no profile; skip duplicate node-list conversion."
+						log "Profile" "Local converter returned no profile; try built-in share-link parser."
 				else
 					log "Profile" "Fallback to node-list compatible conversion."
 					subscription_normalized=
@@ -996,11 +996,7 @@ update_subscription() {
 		subscription_curl "$subscription_header_tmpfile" "$subscription_tmpfile" "$subscription_url" || subscription_curl_result="$?"
 	fi
 	if [ "$subscription_convert" = 1 ] && [ "$subscription_convert_target" = "singbox" ] && [ "$subscription_curl_result" != 0 ]; then
-		if subscription_local_convert_api && [ ! -s "$subscription_tmpfile" ]; then
-			log "Profile" "Skip built-in share-link parser: local converter produced no profile."
-		else
 			subscription_parse_share_links || true
-		fi
 	fi
 	if [ "$subscription_curl_result" = 0 ]; then
 		if [ "$subscription_convert" = 1 ] && [ "$subscription_convert_target" = "singbox" ]; then
