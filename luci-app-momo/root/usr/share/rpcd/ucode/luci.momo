@@ -139,6 +139,11 @@ const methods = {
 			return get_paths();
 		}
 	},
+	status: {
+		call: function() {
+			return { running: system(['/etc/init.d/momo', 'status']) == 0 };
+		}
+	},
 	commit_config: {
 		call: function() {
 			const uci = cursor();

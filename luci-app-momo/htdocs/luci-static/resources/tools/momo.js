@@ -37,6 +37,12 @@ const callMomoGetPaths = rpc.declare({
     expect: { '': {} }
 });
 
+const callMomoStatus = rpc.declare({
+    object: 'luci.momo',
+    method: 'status',
+    expect: { '': {} }
+});
+
 const callMomoCommitConfig = rpc.declare({
     object: 'luci.momo',
     method: 'commit_config',
@@ -169,7 +175,7 @@ return baseclass.extend({
     },
 
     status: async function () {
-        return (await callRCList('momo'))?.momo?.running;
+        return !!(await callMomoStatus())?.running;
     },
 
     reload: function () {
