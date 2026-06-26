@@ -76,11 +76,11 @@ Install packages:
 ```sh
 # opkg
 opkg update
-opkg install momo luci-app-momo luci-i18n-momo-zh-cn
+opkg install momo-full
 
 # apk
 apk update
-apk add momo luci-app-momo luci-i18n-momo-zh-cn
+apk add momo-full
 ```
 
 ### Install From Release Feed
@@ -103,10 +103,10 @@ If the feed has not been published yet, use the build artifact directly:
 
 ```sh
 # opkg firmware
-opkg install momo_*.ipk luci-app-momo_*.ipk luci-i18n-momo-zh-cn_*.ipk
+opkg install momo-full_*.ipk
 
 # apk firmware
-apk add --allow-untrusted momo-*.apk luci-app-momo-*.apk luci-i18n-momo-zh-cn-*.apk
+apk add --allow-untrusted momo-full-*.apk
 ```
 
 ### Build With OpenWrt SDK
@@ -126,10 +126,10 @@ The generated packages are under `bin/packages/<architecture>/momo`. Copy them t
 
 ```sh
 # opkg firmware
-opkg install momo_*.ipk luci-app-momo_*.ipk luci-i18n-momo-zh-cn_*.ipk
+opkg install momo-full_*.ipk
 
 # apk firmware
-apk add --allow-untrusted momo-*.apk luci-app-momo-*.apk luci-i18n-momo-zh-cn-*.apk
+apk add --allow-untrusted momo-full-*.apk
 ```
 
 ## Quick Start

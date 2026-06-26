@@ -76,11 +76,11 @@ wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/feed.sh |
 ```sh
 # opkg
 opkg update
-opkg install momo luci-app-momo luci-i18n-momo-zh-cn
+opkg install momo-full
 
 # apk
 apk update
-apk add momo luci-app-momo luci-i18n-momo-zh-cn
+apk add momo-full
 ```
 
 ### 从 Release 软件源安装
@@ -103,10 +103,10 @@ wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.s
 
 ```sh
 # opkg 固件
-opkg install momo_*.ipk luci-app-momo_*.ipk luci-i18n-momo-zh-cn_*.ipk
+opkg install momo-full_*.ipk
 
 # apk 固件
-apk add --allow-untrusted momo-*.apk luci-app-momo-*.apk luci-i18n-momo-zh-cn-*.apk
+apk add --allow-untrusted momo-full-*.apk
 ```
 
 ### 使用 OpenWrt SDK 编译
@@ -126,10 +126,10 @@ make package/luci-app-momo/compile V=s
 
 ```sh
 # opkg 固件
-opkg install momo_*.ipk luci-app-momo_*.ipk luci-i18n-momo-zh-cn_*.ipk
+opkg install momo-full_*.ipk
 
 # apk 固件
-apk add --allow-untrusted momo-*.apk luci-app-momo-*.apk luci-i18n-momo-zh-cn-*.apk
+apk add --allow-untrusted momo-full-*.apk
 ```
 
 ## 快速开始

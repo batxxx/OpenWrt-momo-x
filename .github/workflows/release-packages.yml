@@ -50,12 +50,9 @@ jobs:
         branch:
           - openwrt-24.10
           - openwrt-25.12
-          - SNAPSHOT
         exclude:
           - arch: riscv64_riscv64
             branch: openwrt-25.12
-          - arch: riscv64_riscv64
-            branch: SNAPSHOT
           - arch: riscv64_generic
             branch: openwrt-24.10
 
@@ -68,7 +65,7 @@ jobs:
         env:
           ARCH: ${{ matrix.arch }}-${{ matrix.branch }}
           FEEDNAME: momo
-          PACKAGES: luci-app-momo
+          PACKAGES: momo-full
           INDEX: 1
           KEY_BUILD: ${{ secrets.KEY_BUILD }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
