@@ -2,12 +2,12 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=momo-x-subconverter
 PKG_VERSION:=0.9.0
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=subconverter_linux64.tar.gz
 PKG_SOURCE_URL:=https://github.com/tindy2013/subconverter/releases/download/v$(PKG_VERSION)
 PKG_HASH:=884a6d1168267eba076fcdd5171215bacf98c17948ab526e4cbbdcad5f7a0217
-PKG_BUILD_DIR:=$(BUILD_DIR)/subconverter
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 
 PKG_LICENSE:=GPL-3.0
 PKG_MAINTAINER:=batxxx
@@ -28,6 +28,12 @@ define Package/momo-x-subconverter/description
 endef
 
 define Build/Compile
+endef
+
+define Build/Prepare
+	$(RM) -r $(PKG_BUILD_DIR)
+	$(INSTALL_DIR) $(PKG_BUILD_DIR)
+	tar -xzf $(DL_DIR)/$(PKG_SOURCE) -C $(PKG_BUILD_DIR) --strip-components=1
 endef
 
 define Package/momo-x-subconverter/install
