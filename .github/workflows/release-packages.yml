@@ -73,10 +73,37 @@ jobs:
             bin/packages/${{ matrix.arch }}/momox
           if-no-files-found: ignore
 
-      - name: install feed tools
+      - name: build feed signing tool
         run: |
           sudo apt-get update
-          sudo apt-get install -y usign
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            ca-certificates \
+            cmake \
+            git \
+            libjson-c-dev \
+            pkg-config
+
+          tools_dir="$RUNNER_TEMP/feed-tools"
+          mkdir -p "$tools_dir/prefix"
+
+          git clone --depth=1 https://git.openwrt.org/project/libubox.git "$tools_dir/libubox"
+          cmake -S "$tools_dir/libubox" -B "$tools_dir/libubox/build" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_LUA=OFF \
+            -DCMAKE_INSTALL_PREFIX="$tools_dir/prefix"
+          cmake --build "$tools_dir/libubox/build" --parallel
+          cmake --install "$tools_dir/libubox/build"
+
+          git clone --depth=1 https://git.openwrt.org/project/usign.git "$tools_dir/usign"
+          cmake -S "$tools_dir/usign" -B "$tools_dir/usign/build" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$tools_dir/prefix" \
+            -DCMAKE_INSTALL_PREFIX="$tools_dir/prefix"
+          cmake --build "$tools_dir/usign/build" --parallel
+
+          test -x "$tools_dir/usign/build/usign"
+          echo "$tools_dir/usign/build" >> "$GITHUB_PATH"
 
       - name: create feed index
         run: |
@@ -85,21 +112,9 @@ jobs:
           feed_dir="bin/packages/${{ matrix.arch }}/momox"
           python3 scripts/make-feed-index.py "$feed_dir"
 
-          usign_bin=""
-          for candidate in staging_dir/host/bin/usign ./staging_dir/host/bin/usign /builder/staging_dir/host/bin/usign; do
-            if [ -x "$candidate" ]; then
-              usign_bin="$candidate"
-              break
-            fi
-          done
+          usign_bin="$(command -v usign || true)"
           if [ -z "$usign_bin" ]; then
-            usign_bin="$(command -v usign || true)"
-          fi
-          if [ -z "$usign_bin" ]; then
-            usign_bin="$(find . -path '*/bin/usign' -type f -perm -111 2>/dev/null | head -n 1 || true)"
-          fi
-          if [ -z "$usign_bin" ]; then
-            echo "::error::usign not found after SDK build"
+            echo "::error::usign not found after building feed signing tool"
             exit 1
           fi
           if [ -z "${KEY_BUILD:-}" ]; then
@@ -108,10 +123,10 @@ jobs:
           fi
 
           key_file="$(mktemp)"
+          trap 'rm -f "$key_file"' EXIT
           printf '%s' "$KEY_BUILD" > "$key_file"
           chmod 600 "$key_file"
           "$usign_bin" -S -m "$feed_dir/Packages" -s "$key_file" -x "$feed_dir/Packages.sig"
-          rm -f "$key_file"
         env:
           KEY_BUILD: ${{ secrets.KEY_BUILD }}
 
