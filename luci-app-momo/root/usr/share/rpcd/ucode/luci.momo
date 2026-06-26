@@ -50,7 +50,7 @@ function subscription_result(section_id, command_success) {
 	const uci = cursor();
 	const state = uci.get_all('momo', section_id) || {};
 	const file = paths.subscriptions_dir + '/' + (state.output_file || (section_id + '.json'));
-	const ok = command_success && state.success == '1' && access(file);
+	const ok = (command_success == null || command_success) && state.success == '1' && access(file);
 	let rule_count = 0;
 	if (access(file)) {
 		try {
@@ -246,7 +246,22 @@ const methods = {
 	update_subscriptions: {
 		call: function() {
 			const success = system(['service', 'momo', 'update_subscriptions']) == 0;
-			return { success: success };
+			let results = [];
+			const uci = cursor();
+			uci.foreach('momo', 'subscription', (section) => {
+				const section_id = section['.name'];
+				if (section_id) {
+					push(results, subscription_result(section_id, null));
+				}
+			});
+			return { success: success, results: results };
+		}
+	},
+	check_profile_path: {
+		args: { path: 'path' },
+		call: function(req) {
+			const success = allowed_profile_path(req.args?.path);
+			return success ? { success: true } : { success: false, error: 'illegal profile path' };
 		}
 	},
 	set_profile: {

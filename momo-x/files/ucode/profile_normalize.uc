@@ -85,21 +85,6 @@ function normalize_inbound_compat(inbound) {
 	}
 }
 
-function needs_dns_reset(dns) {
-	if (dns == null || type(dns) != 'object') {
-		return false;
-	}
-	if (dns.fakeip != null || dns.rules != null) {
-		return true;
-	}
-	for (let server in dns.servers || []) {
-		if (server?.address_resolver != null) {
-			return true;
-		}
-	}
-	return false;
-}
-
 function normalize_route_rule(rule) {
 	if (rule == null || type(rule) != 'object') {
 		return false;
@@ -401,9 +386,6 @@ for (let inbound in profile.inbounds || []) {
 	normalize_inbound_compat(inbound);
 }
 ensure_inbounds(profile);
-if (needs_dns_reset(profile.dns)) {
-	profile.dns = {};
-}
 ensure_dns(profile);
 ensure_route(profile, node_tags);
 

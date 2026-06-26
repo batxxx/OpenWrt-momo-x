@@ -31,9 +31,6 @@ if [ -x "/bin/opkg" ]; then
 	if grep -q momo /etc/opkg/customfeeds.conf; then
 		sed -i '/momo/d' /etc/opkg/customfeeds.conf
 	fi
-	wget -O "momo.pub" "${MOMO_REPOSITORY_URL:-https://batxxx.github.io/OpenWrt-momo-x}/key-build.pub"
-	opkg-key remove momo.pub
-	rm -f momo.pub
 elif [ -x "/usr/bin/apk" ]; then
 	if grep -q momo /etc/apk/repositories.d/customfeeds.list; then
 		sed -i '/momo/d' /etc/apk/repositories.d/customfeeds.list

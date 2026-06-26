@@ -243,7 +243,16 @@ function saveFile(path, editor, restart) {
     const content = editor.value();
     const shouldValidate = /\.json$/i.test(path);
 
-    return Promise.resolve(shouldValidate ? momo.validateProfile(content) : { success: true }).then(function (result) {
+    return momo.checkProfilePath(path).then(function (pathResult) {
+        if (!pathResult || pathResult.success === false) {
+            momo.notify('非法配置文件路径，已取消保存。', 'danger');
+            return false;
+        }
+        return shouldValidate ? momo.validateProfile(content) : { success: true };
+    }).then(function (result) {
+        if (result === false) {
+            return false;
+        }
         if (result && result.success === false) {
             momo.notify('配置校验失败，已取消保存：' + (result.error || '未知错误'), 'danger');
             return false;
@@ -272,8 +281,13 @@ return view.extend({
             return Promise.resolve(['', '', false]);
         }
 
-        return L.resolveDefault(fs.read_direct(path), '').then(function (content) {
-            return [path, content, readonly];
+        return momo.checkProfilePath(path).then(function (result) {
+            if (!result || result.success === false) {
+                return ['', '', false];
+            }
+            return L.resolveDefault(fs.read_direct(path), '').then(function (content) {
+                return [path, content, readonly];
+            });
         });
     },
 

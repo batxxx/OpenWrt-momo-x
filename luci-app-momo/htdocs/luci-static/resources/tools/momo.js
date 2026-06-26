@@ -3,7 +3,6 @@
 'require uci';
 'require fs';
 'require rpc';
-'require request';
 'require ui';
 
 const callRCList = rpc.declare({
@@ -104,6 +103,13 @@ const callMomoValidateProfilePath = rpc.declare({
     expect: { '': {} }
 });
 
+const callMomoCheckProfilePath = rpc.declare({
+    object: 'luci.momo',
+    method: 'check_profile_path',
+    params: ['path'],
+    expect: { '': {} }
+});
+
 const callMomoLog = rpc.declare({
     object: 'luci.momo',
     method: 'log',
@@ -133,7 +139,7 @@ const callMomoDebug = rpc.declare({
 return baseclass.extend({
     notify: function (message, level) {
         level = level || 'info';
-        const timeout = level === 'danger' ? 30000 : (level === 'warning' ? 30000 : 30000);
+        const timeout = 30000;
         const notify = ui.addTimeLimitedNotification || ui.addNotification;
 
         if (notify === ui.addTimeLimitedNotification) {
@@ -242,10 +248,19 @@ return baseclass.extend({
     },
 
     updateSubscriptions: function () {
-        return this.action(callMomoUpdateSubscriptions(), {
-            success: _('全部订阅更新完成'),
-            failure: _('全部订阅更新失败')
-        });
+        return callMomoUpdateSubscriptions().then(L.bind(function (result) {
+            const total = result?.results?.length || 0;
+            const failed = (result?.results || []).filter(function (item) { return item && item.success === false; }).length;
+            if (result?.success) {
+                this.notify(_('全部订阅更新完成') + (total ? `：${total - failed}/${total}` : ''), 'info');
+            } else {
+                this.notify(_('全部订阅更新失败') + (total ? `：${failed}/${total}` : ''), 'danger');
+            }
+            return result;
+        }, this)).catch(L.bind(function (error) {
+            this.notify(_('全部订阅更新失败：') + String(error), 'danger');
+            throw error;
+        }, this));
     },
 
     setProfile: function (profile) {
@@ -261,6 +276,10 @@ return baseclass.extend({
 
     validateProfilePath: function (path) {
         return callMomoValidateProfilePath(path);
+    },
+
+    checkProfilePath: function (path) {
+        return callMomoCheckProfilePath(path);
     },
 
     log: function (type, log_len) {

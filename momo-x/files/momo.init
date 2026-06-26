@@ -293,7 +293,7 @@ start_service() {
 		if [ ! -f "$profile_file" ]; then
 			log "Profile" "File not found."
 			log "App" "Exit."
-			return
+			return 1
 		fi
 		cp -f "$profile_file" "$RUN_PROFILE_PATH"
 	elif [ "$profile_type" = "subscription" ]; then
@@ -304,18 +304,25 @@ start_service() {
 		log "Profile" "Use subscription: $subscription_name."
 		local subscription_file; subscription_file="$(subscription_output_file "$subscription_section")"
 		if [ "$subscription_prefer" = "remote" ] || [ ! -f "$subscription_file" ]; then
-			update_subscription "$subscription_section"
+			if ! update_subscription "$subscription_section"; then
+				if [ "$subscription_prefer" = "remote" ]; then
+					log "Profile" "Subscription update failed."
+					log "App" "Exit."
+					return 1
+				fi
+				log "Profile" "Subscription update failed, fallback to local cache."
+			fi
 		fi
 		if [ ! -f "$subscription_file" ]; then
 			log "Profile" "Subscription file not found."
 			log "App" "Exit."
-			return
+			return 1
 		fi
 		cp -f "$subscription_file" "$RUN_PROFILE_PATH"
 	else
 		log "Profile" "No profile/subscription selected."
 		log "App" "Exit."
-		return
+		return 1
 	fi
 	# format profile
 	$PROG -c "$RUN_PROFILE_PATH" format -w
@@ -683,7 +690,7 @@ clear_logs() {
 update_subscription() {
 	local subscription_section; subscription_section="$1"
 	if [ -z "$subscription_section" ]; then
-		return
+		return 1
 	fi
 	# load config
 	config_load momo
@@ -727,7 +734,7 @@ update_subscription() {
 	[ "$subscription_exclude_invalid" = 1 ] && subscription_exclude_invalid="true" || subscription_exclude_invalid="false"
 	if [ "$subscription_enabled" = 0 ]; then
 		log "Profile" "Skip disabled subscription: $subscription_name."
-		return
+		return 0
 	fi
 	# reset subscription info
 	uci_remove "momo" "$subscription_section" "expire" > /dev/null 2>&1
@@ -1112,9 +1119,17 @@ update_subscription() {
 		rm -f "$subscription_tmpfile"
 	fi
 	uci_commit "momo"
+	[ "$success" = 1 ] && return 0
+	return 1
 }
 
 update_subscriptions() {
+	local failed
+	failed=0
+	update_subscription_collect() {
+		update_subscription "$1" || failed=1
+	}
 	config_load momo
-	config_foreach update_subscription subscription
+	config_foreach update_subscription_collect subscription
+	return "$failed"
 }

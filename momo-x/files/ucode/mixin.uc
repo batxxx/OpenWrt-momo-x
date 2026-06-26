@@ -7,20 +7,6 @@ import { uci_bool, uci_int, uci_array, merge, trim_all, load_profile, save_profi
 
 const uci = cursor();
 
-function uci_json_array(obj) {
-	if (obj == null || length(obj) == 0) {
-		return [];
-	}
-	try {
-		const result = json(obj);
-		if (type(result) == 'array') {
-			return result;
-		}
-	} catch (e) {
-	}
-	return [];
-}
-
 const config = {};
 
 config['log'] = {};
@@ -61,27 +47,5 @@ config['experimental']['clash_api']['secret'] = uci.get('momo', 'mixin', 'extern
 const profile = load_profile();
 
 merge(profile, trim_all(config));
-
-const route_rules_prepend = uci_json_array(uci.get('momo', 'mixin', 'route_rules_prepend'));
-const route_rules_append = uci_json_array(uci.get('momo', 'mixin', 'route_rules_append'));
-if (length(route_rules_prepend) > 0 || length(route_rules_append) > 0) {
-	if (profile['route'] == null || type(profile['route']) != 'object') {
-		profile['route'] = {};
-	}
-	if (profile['route']['rules'] == null || type(profile['route']['rules']) != 'array') {
-		profile['route']['rules'] = [];
-	}
-	let rules = [];
-	for (let rule in route_rules_prepend) {
-		push(rules, rule);
-	}
-	for (let rule in profile['route']['rules']) {
-		push(rules, rule);
-	}
-	for (let rule in route_rules_append) {
-		push(rules, rule);
-	}
-	profile['route']['rules'] = rules;
-}
 
 save_profile(profile);
