@@ -25,8 +25,20 @@ jobs:
           ARCH: ${{ matrix.arch }}-${{ matrix.branch }}
           FEEDNAME: momox
           PACKAGES: momo-x momo-x-subconverter luci-app-momo momo-x-full
+          BUILD_LOG: 1
           NO_REFRESH_CHECK: true
           NO_SHFMT_CHECK: true
+          V: sc
+
+      - name: upload build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: diagnostics_${{ matrix.arch }}-${{ matrix.branch }}
+          path: |
+            logs
+            bin/packages/${{ matrix.arch }}/momox
+          if-no-files-found: ignore
 
       - name: upload
         uses: actions/upload-artifact@v7
