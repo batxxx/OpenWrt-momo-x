@@ -340,18 +340,19 @@ return view.extend({
         o.default = '';
         o.modalonly = true;
         o.depends('convert', '1');
-        o.description = '选择模板时会优先保留模板里的完整分流规则；如果模板规则不兼容，会自动回退到节点列表兼容模式。';
+        o.description = '本地模板会随 momo-x 一起安装，更新订阅时不再从 GitHub 拉取模板和规则集。';
         o.value('', '服务默认模板');
-        o.value('https://gist.githubusercontent.com/tindy2013/1fa08640a9088ac8652dbd40c5d2715b/raw/lhie1_dler.ini', 'lhie1 洞主规则完整版');
-        o.value('https://gist.githubusercontent.com/tindy2013/1fa08640a9088ac8652dbd40c5d2715b/raw/lhie1_clash.ini', 'lhie1 洞主规则 Clash 分组');
-        o.value('https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_AdblockPlus.ini', 'ACL4SSR AdblockPlus');
-        o.value('https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_BackCN.ini', 'ACL4SSR BackCN');
-        o.value('https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online.ini', 'ACL4SSR Online');
-        o.value('https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Full.ini', 'ACL4SSR Online Full');
-        o.value('https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Full_AdblockPlus.ini', 'ACL4SSR Online Full AdblockPlus');
-        o.value('https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Full_Netflix.ini', 'ACL4SSR Online Full Netflix');
-        o.value('https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Mini.ini', 'ACL4SSR Online Mini');
+        o.value('config/momo-x_lhie1_dler.ini', 'lhie1 洞主规则完整版（本地）');
         o.value('custom', '自定义模板 URL');
+        o.cfgvalue = function (section_id) {
+            const value = uci.get('momo', section_id, 'convert_template') || '';
+            if (value === 'https://gist.githubusercontent.com/tindy2013/1fa08640a9088ac8652dbd40c5d2715b/raw/lhie1_dler.ini' ||
+                value === '/etc/momo/subconverter/momo-x/config/lhie1_dler.ini' ||
+                value === '/etc/momo/subconverter/config/momo-x_lhie1_dler.ini') {
+                return 'config/momo-x_lhie1_dler.ini';
+            }
+            return value;
+        };
 
         o = s.option(form.Value, 'convert_custom_template', '自定义模板 URL');
         o.modalonly = true;

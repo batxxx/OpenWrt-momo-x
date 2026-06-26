@@ -30,8 +30,11 @@ define Package/momo-x/install
 	$(INSTALL_DIR) $(1)/etc/momo/firewall
 	$(INSTALL_DIR) $(1)/etc/momo/profiles
 	$(INSTALL_DIR) $(1)/etc/momo/subscriptions
+	$(INSTALL_DIR) $(1)/etc/momo/subconverter
 	$(INSTALL_DIR) $(1)/etc/momo/run
 	$(INSTALL_DIR) $(1)/etc/capabilities
+
+	$(CP) $(CURDIR)/files/subconverter/. $(1)/etc/momo/subconverter/
 
 	$(INSTALL_BIN) $(CURDIR)/files/ucode/include.uc $(1)/etc/momo/ucode/include.uc
 	$(INSTALL_BIN) $(CURDIR)/files/ucode/mixin.uc $(1)/etc/momo/ucode/mixin.uc

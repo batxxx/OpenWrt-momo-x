@@ -94,6 +94,28 @@ subscription_output_file() {
 	printf '%s/%s' "$SUBSCRIPTIONS_DIR" "$output_file"
 }
 
+local_subscription_template() {
+	local template local_template
+	template="$1"
+	local_template="config/momo-x_lhie1_dler.ini"
+
+	case "$template" in
+		https://gist.githubusercontent.com/tindy2013/1fa08640a9088ac8652dbd40c5d2715b/raw/lhie1_dler.ini|\
+		lhie1_dler|\
+		lhie1_dler.ini|\
+		/etc/momo/subconverter/momo-x/config/lhie1_dler.ini|\
+		/etc/momo/subconverter/config/momo-x_lhie1_dler.ini|\
+		config/momo-x_lhie1_dler.ini)
+			if [ -f "$HOME_DIR/subconverter/config/momo-x_lhie1_dler.ini" ]; then
+				printf '%s' "$local_template"
+				return
+			fi
+		;;
+	esac
+
+	printf '%s' "$template"
+}
+
 subscription_update_cron() {
 	local mode weekday time hour minute interval
 	config_get mode "config" "subscription_update_mode" "appointment"
@@ -695,6 +717,7 @@ update_subscription() {
 	if [ "$subscription_convert_template" = "custom" ]; then
 		subscription_convert_template="$subscription_convert_custom_template"
 	fi
+	subscription_convert_template="$(local_subscription_template "$subscription_convert_template")"
 	[ "$subscription_convert_emoji" = 1 ] && subscription_convert_emoji="true" || subscription_convert_emoji="false"
 	[ "$subscription_convert_udp" = 1 ] && subscription_convert_udp="true" || subscription_convert_udp="false"
 	[ "$subscription_convert_skip_cert_verify" = 1 ] && subscription_convert_skip_cert_verify="true" || subscription_convert_skip_cert_verify="false"
