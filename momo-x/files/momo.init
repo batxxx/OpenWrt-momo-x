@@ -671,7 +671,7 @@ update_subscription() {
 	config_get subscription_name "$subscription_section" "name"
 	config_get subscription_info_url "$subscription_section" "info_url"
 	config_get subscription_url "$subscription_section" "url"
-	config_get subscription_user_agent "$subscription_section" "user_agent"
+	config_get subscription_user_agent "$subscription_section" "user_agent" "sing-box"
 	config_get_bool subscription_allow_insecure "$subscription_section" "allow_insecure" 0
 	config_get subscription_proxy "$subscription_section" "download_proxy"
 	config_get_bool subscription_convert "$subscription_section" "convert" 0

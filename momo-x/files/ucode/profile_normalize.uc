@@ -175,8 +175,31 @@ function ensure_outbounds(profile, node_tags) {
 	}
 }
 
-function normalize_group_outbounds(profile) {
+function node_tag_lookup(node_tags) {
+	let lookup = {};
+	if (type(node_tags) != 'array') {
+		return lookup;
+	}
+	for (let tag in node_tags) {
+		if (tag != null && length(tag) > 0) {
+			lookup[tag] = true;
+		}
+	}
+	return lookup;
+}
+
+function has_proxy_node_ref(refs, node_lookup) {
+	for (let tag in refs || []) {
+		if (node_lookup[tag]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function normalize_group_outbounds(profile, node_tags) {
 	let tags = {};
+	let nodes = node_tag_lookup(node_tags);
 	for (let outbound in profile.outbounds || []) {
 		if (outbound?.tag != null && length(outbound.tag) > 0) {
 			tags[outbound.tag] = true;
@@ -196,6 +219,16 @@ function normalize_group_outbounds(profile) {
 			}
 			push(refs, tag);
 			seen[tag] = true;
+		}
+
+		if ((outbound?.type == 'selector' || outbound?.type == 'urltest') && !has_proxy_node_ref(refs, nodes)) {
+			for (let node in node_tags || []) {
+				if (node == null || length(node) == 0 || node == outbound?.tag || !tags[node] || seen[node]) {
+					continue;
+				}
+				push(refs, node);
+				seen[node] = true;
+			}
 		}
 
 		if (length(refs) == 0 && tags['direct']) {
@@ -345,7 +378,7 @@ try {
 
 const node_tags = ensure_node_tags(profile);
 ensure_outbounds(profile, node_tags);
-normalize_group_outbounds(profile);
+normalize_group_outbounds(profile, node_tags);
 for (let inbound in profile.inbounds || []) {
 	normalize_inbound_compat(inbound);
 }

@@ -308,14 +308,12 @@ return view.extend({
         o = s.option(form.Value, 'remark', '备注');
         o.modalonly = true;
 
-        o = s.option(form.Value, 'user_agent', _('User Agent'));
-        o.default = 'clash.meta/1.19.20';
+        o = s.option(form.Value, 'user_agent', '用户代理（UA）');
+        o.default = 'sing-box';
         o.modalonly = true;
         o.rmempty = false;
-        o.value('clash.meta/1.19.20');
-        o.value('clash-verge/v2.4.5');
-        o.value('Clash');
         o.value('sing-box');
+        o.description = '默认使用 sing-box；如订阅服务有特殊要求，可直接输入自定义 UA。';
 
         o = s.option(form.Flag, 'convert', '在线订阅转换');
         o.default = '0';
