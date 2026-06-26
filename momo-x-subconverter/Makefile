@@ -7,7 +7,7 @@ PKG_RELEASE:=1
 PKG_SOURCE:=subconverter_linux64.tar.gz
 PKG_SOURCE_URL:=https://github.com/tindy2013/subconverter/releases/download/v$(PKG_VERSION)
 PKG_HASH:=884a6d1168267eba076fcdd5171215bacf98c17948ab526e4cbbdcad5f7a0217
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
+PKG_BUILD_DIR:=$(BUILD_DIR)/subconverter
 
 PKG_LICENSE:=GPL-3.0
 PKG_MAINTAINER:=batxxx
@@ -32,11 +32,7 @@ endef
 
 define Package/momo-x-subconverter/install
 	$(INSTALL_DIR) $(1)/etc/momo/subconverter
-	if [ -d "$(PKG_BUILD_DIR)/subconverter" ]; then \
-		$(CP) $(PKG_BUILD_DIR)/subconverter/. $(1)/etc/momo/subconverter/; \
-	else \
-		$(CP) $(PKG_BUILD_DIR)/. $(1)/etc/momo/subconverter/; \
-	fi
+	$(CP) $(PKG_BUILD_DIR)/. $(1)/etc/momo/subconverter/
 	chmod +x $(1)/etc/momo/subconverter/subconverter
 endef
 
