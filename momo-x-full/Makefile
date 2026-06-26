@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=momo-x-full
 PKG_VERSION:=2026.06.03
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_LICENSE:=GPL-3.0+
 PKG_MAINTAINER:=Joseph Mory <morytyann@gmail.com>
@@ -14,7 +14,7 @@ define Package/momo-x-full
   CATEGORY:=Network
   TITLE:=Complete Momo-X installation entry package
   URL:=https://github.com/batxxx/OpenWrt-momo-x
-  DEPENDS:=+momo-x +momo-x-subconverter +luci-app-momo +luci-i18n-momo-zh-cn
+  EXTRA_DEPENDS:=momo-x, momo-x-subconverter, luci-app-momo, luci-i18n-momo-zh-cn
   CONFLICTS:=momo-full
   PKGARCH:=all
 endef

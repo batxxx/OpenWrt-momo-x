@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=momo-x-subconverter
 PKG_VERSION:=0.9.0
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE:=subconverter_linux64.tar.gz
 PKG_SOURCE_URL:=https://github.com/tindy2013/subconverter/releases/download/v$(PKG_VERSION)
@@ -19,7 +19,7 @@ define Package/momo-x-subconverter
   CATEGORY:=Network
   TITLE:=Local subconverter service files for Momo-X
   URL:=https://github.com/tindy2013/subconverter
-  DEPENDS:=+momo-x
+  EXTRA_DEPENDS:=momo-x
   CONFLICTS:=momo-subconverter
 endef
 
@@ -32,13 +32,13 @@ endef
 
 define Build/Prepare
 	$(RM) -r $(PKG_BUILD_DIR)
-	$(INSTALL_DIR) $(PKG_BUILD_DIR)
-	tar -xzf $(DL_DIR)/$(PKG_SOURCE) -C $(PKG_BUILD_DIR) --strip-components=1
+	$(INSTALL_DIR) $(PKG_BUILD_DIR)/source
+	tar -xzf $(DL_DIR)/$(PKG_SOURCE) -C $(PKG_BUILD_DIR)/source --strip-components=1
 endef
 
 define Package/momo-x-subconverter/install
 	$(INSTALL_DIR) $(1)/etc/momo/subconverter
-	$(CP) $(PKG_BUILD_DIR)/. $(1)/etc/momo/subconverter/
+	$(CP) $(PKG_BUILD_DIR)/source/. $(1)/etc/momo/subconverter/
 	chmod +x $(1)/etc/momo/subconverter/subconverter
 endef
 

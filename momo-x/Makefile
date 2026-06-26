@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=momo-x
 PKG_VERSION:=2026.06.03
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_LICENSE:=GPL-3.0+
 PKG_MAINTAINER:=Joseph Mory <morytyann@gmail.com>
@@ -14,7 +14,8 @@ define Package/momo-x
   CATEGORY:=Network
   TITLE:=Transparent Proxy with sing-box on OpenWrt.
   URL:=https://github.com/batxxx/OpenWrt-momo-x
-  DEPENDS:=+ca-bundle +curl firewall4 +ip-full +kmod-inet-diag +kmod-nft-socket +kmod-nft-tproxy +kmod-tun +kmod-dummy +sing-box
+  DEPENDS:=+ca-bundle +curl firewall4 +ip-full +kmod-inet-diag +kmod-nft-socket +kmod-nft-tproxy +kmod-tun +kmod-dummy
+  EXTRA_DEPENDS:=sing-box
   CONFLICTS:=momo
 endef
 
