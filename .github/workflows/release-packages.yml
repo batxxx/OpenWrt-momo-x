@@ -1,6 +1,17 @@
 name: release-packages
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/release-packages.yml"
+      - "scripts/make-feed-index.py"
+      - "momo-x/**"
+      - "momo-x-subconverter/**"
+      - "momo-x-full/**"
+      - "luci-app-momo/**"
+      - "luci-i18n-momo-zh-cn/**"
   workflow_dispatch:
     inputs:
       release_tag:
@@ -44,7 +55,7 @@ jobs:
           ARCH: ${{ matrix.arch }}-${{ matrix.branch }}
           FEEDNAME: momox
           PACKAGES: momo-x momo-x-subconverter luci-app-momo momo-x-full
-          INDEX: 1
+          INDEX: 0
           KEY_BUILD: ${{ secrets.KEY_BUILD }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           BUILD_LOG: 1
@@ -62,6 +73,43 @@ jobs:
             bin/packages/${{ matrix.arch }}/momox
           if-no-files-found: ignore
 
+      - name: create feed index
+        run: |
+          set -eu
+
+          feed_dir="bin/packages/${{ matrix.arch }}/momox"
+          python3 scripts/make-feed-index.py "$feed_dir"
+
+          usign_bin=""
+          for candidate in staging_dir/host/bin/usign ./staging_dir/host/bin/usign /builder/staging_dir/host/bin/usign; do
+            if [ -x "$candidate" ]; then
+              usign_bin="$candidate"
+              break
+            fi
+          done
+          if [ -z "$usign_bin" ]; then
+            usign_bin="$(command -v usign || true)"
+          fi
+          if [ -z "$usign_bin" ]; then
+            usign_bin="$(find . -path '*/bin/usign' -type f -perm -111 2>/dev/null | head -n 1 || true)"
+          fi
+          if [ -z "$usign_bin" ]; then
+            echo "::error::usign not found after SDK build"
+            exit 1
+          fi
+          if [ -z "${KEY_BUILD:-}" ]; then
+            echo "::error::KEY_BUILD secret is missing"
+            exit 1
+          fi
+
+          key_file="$(mktemp)"
+          printf '%s' "$KEY_BUILD" > "$key_file"
+          chmod 600 "$key_file"
+          "$usign_bin" -S -m "$feed_dir/Packages" -s "$key_file" -x "$feed_dir/Packages.sig"
+          rm -f "$key_file"
+        env:
+          KEY_BUILD: ${{ secrets.KEY_BUILD }}
+
       - name: compress
         run: |
           tar -c -z -f momo-x_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz -C bin/packages/${{ matrix.arch }}/momox .
@@ -78,10 +126,10 @@ jobs:
       - name: publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.release_tag || format('momo-x-{0}', github.run_number) }}
-          name: Momo-X ${{ inputs.release_tag || format('momo-x-{0}', github.run_number) }}
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || format('momo-x-{0}', github.run_number) }}
+          name: Momo-X ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || format('momo-x-{0}', github.run_number) }}
           target_commitish: ${{ github.sha }}
-          prerelease: ${{ inputs.prerelease }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
           fail_on_unmatched_files: true
           files: |
             public/${{ matrix.branch }}/${{ matrix.arch }}/momo-x/*.ipk
