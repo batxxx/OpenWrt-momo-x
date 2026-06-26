@@ -1,6 +1,6 @@
 {
     "admin/services/momo": {
-        "title": "Momo",
+        "title": "Momo-X",
         "action": {
             "type": "firstchild"
         },

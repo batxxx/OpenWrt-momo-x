@@ -339,7 +339,7 @@ msgstr ""
 
 #: applications/luci-app-momo/htdocs/luci-static/resources/view/momo/app.js:38
 #: applications/luci-app-momo/root/usr/share/luci/menu.d/luci-app-momo.json:3
-msgid "Momo"
+msgid "Momo-X"
 msgstr ""
 
 #: applications/luci-app-momo/htdocs/luci-static/resources/view/momo/mixin.js:90

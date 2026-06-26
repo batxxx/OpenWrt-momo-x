@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "GitHub Release tag, for example v1.2.3. Leave empty to use momo-<run_number>."
+        description: "GitHub Release tag, for example v1.2.3. Leave empty to use momo-x-<run_number>."
         required: false
         type: string
       prerelease:
@@ -42,8 +42,8 @@ jobs:
         uses: openwrt/gh-action-sdk@main
         env:
           ARCH: ${{ matrix.arch }}-${{ matrix.branch }}
-          FEEDNAME: momo
-          PACKAGES: momo-full
+          FEEDNAME: momo-x
+          PACKAGES: momo-x-full
           INDEX: 1
           KEY_BUILD: ${{ secrets.KEY_BUILD }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
@@ -51,31 +51,31 @@ jobs:
 
       - name: compress
         run: |
-          tar -c -z -f momo_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz -C bin/packages/${{ matrix.arch }}/momo .
+          tar -c -z -f momo-x_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz -C bin/packages/${{ matrix.arch }}/momo-x .
           mkdir -p public/${{ matrix.branch }}/${{ matrix.arch }}
-          mv bin/packages/${{ matrix.arch }}/momo public/${{ matrix.branch }}/${{ matrix.arch }}
-          tar -c -z -f feed_momo_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz public/${{ matrix.branch }}/${{ matrix.arch }}
+          mv bin/packages/${{ matrix.arch }}/momo-x public/${{ matrix.branch }}/${{ matrix.arch }}
+          tar -c -z -f feed_momo-x_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz public/${{ matrix.branch }}/${{ matrix.arch }}
 
       - name: upload
         uses: actions/upload-artifact@v7
         with:
-          name: feed_momo_${{ matrix.arch }}-${{ matrix.branch }}
-          path: feed_momo_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz
+          name: feed_momo-x_${{ matrix.arch }}-${{ matrix.branch }}
+          path: feed_momo-x_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz
 
       - name: publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.release_tag || format('momo-{0}', github.run_number) }}
-          name: Momo ${{ inputs.release_tag || format('momo-{0}', github.run_number) }}
+          tag_name: ${{ inputs.release_tag || format('momo-x-{0}', github.run_number) }}
+          name: Momo-X ${{ inputs.release_tag || format('momo-x-{0}', github.run_number) }}
           target_commitish: ${{ github.sha }}
           prerelease: ${{ inputs.prerelease }}
           fail_on_unmatched_files: true
           files: |
-            public/${{ matrix.branch }}/${{ matrix.arch }}/momo/*.ipk
-            momo_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz
-            feed_momo_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz
+            public/${{ matrix.branch }}/${{ matrix.arch }}/momo-x/*.ipk
+            momo-x_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz
+            feed_momo-x_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz
           body: |
-            Momo packages for OpenWrt 24.10 x86_64.
+            Momo-X packages for OpenWrt 24.10 x86_64.
 
             Install from the GitHub Pages feed:
 
@@ -95,7 +95,7 @@ jobs:
       - name: download
         uses: actions/download-artifact@v8
         with:
-          pattern: feed_momo_*
+          pattern: feed_momo-x_*
           merge-multiple: true
 
       - name: install tools
@@ -105,7 +105,7 @@ jobs:
 
       - name: uncompress
         run: |
-          for file in feed_momo_*.tar.gz; do
+          for file in feed_momo-x_*.tar.gz; do
             tar -x -z -f "$file"
           done
 
@@ -114,7 +114,7 @@ jobs:
           touch public/.nojekyll
           echo "${{ secrets.KEY_BUILD_PUB }}" > public/key-build.pub
           echo "${{ secrets.PUBLIC_KEY }}" > public/public-key.pem
-          tree --dirsfirst --sort name -P '*.ipk' --prune --noreport -H "" -T "Momo's Feed" --charset utf-8 -o public/index.html public
+          tree --dirsfirst --sort name -P '*.ipk' --prune --noreport -H "" -T "Momo-X Feed" --charset utf-8 -o public/index.html public
           sed -i '/<p class="VERSION">/,/<\/p>/d' public/index.html
 
       - name: configure pages

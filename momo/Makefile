@@ -1,6 +1,6 @@
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=momo
+PKG_NAME:=momo-x
 PKG_VERSION:=2026.06.03
 PKG_RELEASE:=1
 
@@ -9,19 +9,19 @@ PKG_MAINTAINER:=Joseph Mory <morytyann@gmail.com>
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/momo
+define Package/momo-x
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Transparent Proxy with sing-box on OpenWrt.
-  URL:=https://github.com/nikkinikki-org
+  URL:=https://github.com/batxxx/OpenWrt-momo-x
   DEPENDS:=+ca-bundle +curl firewall4 +ip-full +kmod-inet-diag +kmod-nft-socket +kmod-nft-tproxy +kmod-tun +kmod-dummy +sing-box
 endef
 
-define Package/momo/conffiles
+define Package/momo-x/conffiles
 /etc/config/momo
 endef
 
-define Package/momo/install
+define Package/momo-x/install
 	$(INSTALL_DIR) $(1)/etc/momo
 	$(INSTALL_DIR) $(1)/etc/momo/ucode
 	$(INSTALL_DIR) $(1)/etc/momo/scripts
@@ -61,7 +61,7 @@ define Package/momo/install
 	$(INSTALL_DATA) $(CURDIR)/files/momo.upgrade $(1)/lib/upgrade/keep.d/momo
 endef
 
-define Package/momo/postrm
+define Package/momo-x/postrm
 #!/bin/sh
 if [ -z $${IPKG_INSTROOT} ]; then
 	uci -q batch <<-EOF > /dev/null
@@ -75,4 +75,4 @@ define Build/Compile
 
 endef
 
-$(eval $(call BuildPackage,momo))
+$(eval $(call BuildPackage,momo-x))

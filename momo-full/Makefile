@@ -1,6 +1,6 @@
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=momo-full
+PKG_NAME:=momo-x-full
 PKG_VERSION:=2026.06.03
 PKG_RELEASE:=1
 
@@ -9,26 +9,26 @@ PKG_MAINTAINER:=Joseph Mory <morytyann@gmail.com>
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/momo-full
+define Package/momo-x-full
   SECTION:=net
   CATEGORY:=Network
-  TITLE:=Complete Momo installation entry package
+  TITLE:=Complete Momo-X installation entry package
   URL:=https://github.com/batxxx/OpenWrt-momo-x
-  DEPENDS:=+momo +momo-subconverter +luci-app-momo +luci-i18n-momo-zh-cn
+  DEPENDS:=+momo-x +momo-x-subconverter +luci-app-momo +luci-i18n-momo-zh-cn
   PKGARCH:=all
 endef
 
-define Package/momo-full/description
-  Meta package for installing Momo service, local subconverter, LuCI app,
+define Package/momo-x-full/description
+  Meta package for installing Momo-X service, local subconverter, LuCI app,
   and Chinese translation.
 endef
 
 define Build/Compile
 endef
 
-define Package/momo-full/install
-	$(INSTALL_DIR) $(1)/usr/share/doc/momo-full
-	echo "Momo full installation entry package." > $(1)/usr/share/doc/momo-full/README
+define Package/momo-x-full/install
+	$(INSTALL_DIR) $(1)/usr/share/doc/momo-x-full
+	echo "Momo-X full installation entry package." > $(1)/usr/share/doc/momo-x-full/README
 endef
 
-$(eval $(call BuildPackage,momo-full))
+$(eval $(call BuildPackage,momo-x-full))

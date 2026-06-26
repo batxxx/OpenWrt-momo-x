@@ -2,9 +2,9 @@
 
 English | [中文](README.zh.md)
 
-# Momo
+# Momo-X
 
-Momo is a LuCI app and service package for running sing-box transparent proxy on OpenWrt. It provides profile management, subscription conversion, visual rule editing, rule append templates, dashboard access, and firewall/TUN/TPROXY integration.
+Momo-X is a LuCI app and service package for running sing-box transparent proxy on OpenWrt. It provides profile management, subscription conversion, visual rule editing, rule append templates, dashboard access, and firewall/TUN/TPROXY integration.
 
 ## Requirements
 
@@ -50,7 +50,7 @@ This fork publishes installable packages in two places:
 The current public feed is:
 
 ```text
-https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo/
+https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo-x/
 ```
 
 The current release workflow publishes `OpenWrt 24.10` packages for `x86_64`.
@@ -65,7 +65,7 @@ For supported systems, run:
 wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.sh | ash
 ```
 
-This script adds the package signing key, adds the GitHub Pages feed, updates the package index, and installs `momo-full`. The `momo-full` entry package installs Momo, LuCI, Chinese translation, and the local subconverter package.
+This script adds the package signing key, adds the GitHub Pages feed, updates the package index, and installs `momo-x-full`. The `momo-x-full` entry package installs Momo-X, LuCI, Chinese translation, and the local subconverter package.
 
 ### Manual Feed Install
 
@@ -79,7 +79,7 @@ Install packages:
 
 ```sh
 opkg update
-opkg install momo-full
+opkg install momo-x-full
 ```
 
 ### Install From GitHub Releases
@@ -89,7 +89,7 @@ If you need the raw package files, download them from the Releases page:
 1. Open `Releases` in this repository.
 2. Download all `.ipk` package files for `openwrt-24.10 x86_64`.
 3. Copy the `.ipk` packages to the router.
-4. Install all downloaded Momo packages together:
+4. Install all downloaded Momo-X packages together:
 
 ```sh
 opkg update
@@ -102,9 +102,9 @@ If a release has not been published yet, use the workflow artifact directly:
 
 1. Open `Actions` in this repository.
 2. Run the `release-packages` workflow.
-3. Download the generated `feed_momo_x86_64-openwrt-24.10` artifact.
+3. Download the generated `feed_momo-x_x86_64-openwrt-24.10` artifact.
 4. Copy the `.ipk` packages to the router.
-5. Install all downloaded Momo packages together:
+5. Install all downloaded Momo-X packages together:
 
 ```sh
 opkg update
@@ -116,15 +116,17 @@ opkg install ./*.ipk
 In an OpenWrt SDK or buildroot:
 
 ```sh
-echo "src-git momo https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
-./scripts/feeds update momo
-./scripts/feeds install -a -p momo
+echo "src-git momo-x https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
+./scripts/feeds update momo-x
+./scripts/feeds install -a -p momo-x
 
-make package/momo/compile V=s
-make package/luci-app-momo/compile V=s
+make package/feeds/momo-x/momo/compile V=s
+make package/feeds/momo-x/momo-subconverter/compile V=s
+make package/feeds/momo-x/luci-app-momo/compile V=s
+make package/feeds/momo-x/momo-full/compile V=s
 ```
 
-The generated packages are under `bin/packages/<architecture>/momo`. Copy the generated Momo packages to the router and install them together:
+The generated packages are under `bin/packages/<architecture>/momo-x`. Copy the generated Momo-X packages to the router and install them together:
 
 ```sh
 opkg update
@@ -133,7 +135,7 @@ opkg install ./*.ipk
 
 ## Quick Start
 
-1. Open LuCI and go to `Services` -> `Momo`.
+1. Open LuCI and go to `Services` -> `Momo-X`.
 2. Open `Subscription Management`.
 3. Add a remote subscription:
    - Enter a subscription name.
@@ -145,7 +147,7 @@ opkg install ./*.ipk
 4. Click `Update` for the subscription.
 5. Open `Profile`.
 6. Select the generated subscription profile and click `Switch`.
-7. Go back to `App Config`, enable Momo, and click `Save & Apply`.
+7. Go back to `App Config`, enable Momo-X, and click `Save & Apply`.
 8. Use `Open Web Dashboard` to access the Clash API dashboard.
 
 ## LuCI Pages
@@ -287,7 +289,7 @@ When a conversion template contains full routing rules, Momo tries to preserve t
 
 Check:
 
-- Momo is running.
+- Momo-X is running.
 - The external control API listen address is configured, commonly `0.0.0.0:9090`.
 - The dashboard URL uses the router IP, for example `http://192.168.1.1:9090/ui/`.
 - The API secret matches the value in Mixin Config.
@@ -346,14 +348,16 @@ wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/uninstall
 ## Build
 
 ```sh
-echo "src-git momo https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
-./scripts/feeds update momo
-./scripts/feeds install -a -p momo
-make package/momo/compile V=s
-make package/luci-app-momo/compile V=s
+echo "src-git momo-x https://github.com/batxxx/OpenWrt-momo-x.git;main" >> feeds.conf.default
+./scripts/feeds update momo-x
+./scripts/feeds install -a -p momo-x
+make package/feeds/momo-x/momo/compile V=s
+make package/feeds/momo-x/momo-subconverter/compile V=s
+make package/feeds/momo-x/luci-app-momo/compile V=s
+make package/feeds/momo-x/momo-full/compile V=s
 ```
 
-Package files will be generated under `bin/packages/<architecture>/momo`.
+Package files will be generated under `bin/packages/<architecture>/momo-x`.
 
 ## How It Works
 

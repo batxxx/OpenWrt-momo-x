@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Momo's installer
+# Momo-X installer
 
 # check env
 if { [ ! -x "/bin/opkg" ] && [ ! -x "/usr/bin/apk" ]; } || [ ! -x "/sbin/fw4" ]; then
@@ -31,7 +31,7 @@ fi
 
 # feed url
 repository_url="${MOMO_REPOSITORY_URL:-https://batxxx.github.io/OpenWrt-momo-x}"
-feed_url="$repository_url/$branch/$arch/momo"
+feed_url="$repository_url/$branch/$arch/momo-x"
 
 if [ -x "/bin/opkg" ]; then
 	# add key
@@ -42,16 +42,16 @@ if [ -x "/bin/opkg" ]; then
 	rm -f "$key_build_pub_file"
 	# add feed
 	echo "add feed"
-	if grep -q momo /etc/opkg/customfeeds.conf; then
-		sed -i '/momo/d' /etc/opkg/customfeeds.conf
+	if grep -q 'momo' /etc/opkg/customfeeds.conf; then
+		sed -i '/src\/gz momo-x /d;/src\/gz momo /d' /etc/opkg/customfeeds.conf
 	fi
-	echo "src/gz momo $feed_url" >> /etc/opkg/customfeeds.conf
+	echo "src/gz momo-x $feed_url" >> /etc/opkg/customfeeds.conf
 	# update feeds
 	echo "update feeds"
 	opkg update
 	# install entry package from feed
-	echo "install momo-full"
-	opkg install momo-full
+	echo "install momo-x-full"
+	opkg install momo-x-full
 elif [ -x "/usr/bin/apk" ]; then
 	echo "apk-based firmware is detected, but the current public feed only publishes opkg/ipk packages"
 	exit 1

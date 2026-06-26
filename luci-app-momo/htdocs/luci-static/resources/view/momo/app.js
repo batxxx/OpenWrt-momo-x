@@ -155,7 +155,7 @@ return view.extend({
 
         installStyle();
 
-        m = new form.Map('momo', _('Momo'), `${_('基于 sing-box 的 OpenWrt 透明代理。')} <a href="https://github.com/batxxx/OpenWrt-momo-x/wiki" target="_blank">${_('使用说明')}</a>`);
+        m = new form.Map('momo', _('Momo-X'), `${_('基于 sing-box 的 OpenWrt 透明代理。')} <a href="https://github.com/batxxx/OpenWrt-momo-x/wiki" target="_blank">${_('使用说明')}</a>`);
 
         s = m.section(form.TableSection, 'placeholder', _('运行状态'));
         s.anonymous = true;

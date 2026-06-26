@@ -1,6 +1,6 @@
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=momo-subconverter
+PKG_NAME:=momo-x-subconverter
 PKG_VERSION:=0.9.0
 PKG_RELEASE:=1
 
@@ -14,22 +14,22 @@ PKG_MAINTAINER:=batxxx
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/momo-subconverter
+define Package/momo-x-subconverter
   SECTION:=net
   CATEGORY:=Network
-  TITLE:=Local subconverter service files for Momo
+  TITLE:=Local subconverter service files for Momo-X
   URL:=https://github.com/tindy2013/subconverter
-  DEPENDS:=+momo
+  DEPENDS:=+momo-x
 endef
 
-define Package/momo-subconverter/description
-  Installs the local subconverter binary and resources used by Momo.
+define Package/momo-x-subconverter/description
+  Installs the local subconverter binary and resources used by Momo-X.
 endef
 
 define Build/Compile
 endef
 
-define Package/momo-subconverter/install
+define Package/momo-x-subconverter/install
 	$(INSTALL_DIR) $(1)/etc/momo/subconverter
 	if [ -d "$(PKG_BUILD_DIR)/subconverter" ]; then \
 		$(CP) $(PKG_BUILD_DIR)/subconverter/. $(1)/etc/momo/subconverter/; \
@@ -39,7 +39,7 @@ define Package/momo-subconverter/install
 	chmod +x $(1)/etc/momo/subconverter/subconverter
 endef
 
-define Package/momo-subconverter/postinst
+define Package/momo-x-subconverter/postinst
 #!/bin/sh
 [ -n "$${IPKG_INSTROOT}" ] && exit 0
 if [ -x /etc/init.d/momo-subconverter ]; then
@@ -51,11 +51,11 @@ fi
 exit 0
 endef
 
-define Package/momo-subconverter/prerm
+define Package/momo-x-subconverter/prerm
 #!/bin/sh
 [ -n "$${IPKG_INSTROOT}" ] && exit 0
 [ -x /etc/init.d/momo-subconverter ] && /etc/init.d/momo-subconverter stop 2>/dev/null || true
 exit 0
 endef
 
-$(eval $(call BuildPackage,momo-subconverter))
+$(eval $(call BuildPackage,momo-x-subconverter))
