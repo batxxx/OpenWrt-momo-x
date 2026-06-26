@@ -54,6 +54,7 @@ https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo/
 ```
 
 当前 release 工作流发布的是 `OpenWrt 24.10` 的 `x86_64` 软件包。
+当前公开构建只发布 opkg/ipk 软件包。
 手动运行 `Actions` -> `release-packages` 时，可以填写 `release_tag` 作为要发布的版本号，例如 `v1.2.3`。
 
 ### 一键安装
@@ -64,7 +65,7 @@ https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo/
 wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.sh | ash
 ```
 
-这个脚本会自动添加软件包签名密钥、添加 GitHub Pages 软件源、更新软件包索引，并安装 `momo-full`。
+这个脚本会自动添加软件包签名密钥、添加 GitHub Pages 软件源、更新软件包索引，并安装 `momo-full`。`momo-full` 入口包会安装 Momo、LuCI、中文翻译和本地 subconverter 软件包。
 
 ### 手动添加软件源安装
 
@@ -77,13 +78,8 @@ wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/feed.sh |
 安装软件包：
 
 ```sh
-# opkg
 opkg update
 opkg install momo-full
-
-# apk
-apk update
-apk add momo-full
 ```
 
 ### 从 GitHub Releases 下载安装
@@ -91,12 +87,13 @@ apk add momo-full
 如果需要直接下载原始软件包文件，可以从 Releases 页面下载：
 
 1. 打开本仓库的 `Releases` 页面。
-2. 下载 `openwrt-24.10 x86_64` 对应的软件包。
+2. 下载 `openwrt-24.10 x86_64` 对应的全部 `.ipk` 软件包。
 3. 将 `.ipk` 软件包上传到路由器。
-4. 手动安装：
+4. 一次性安装下载的所有 Momo 软件包：
 
 ```sh
-opkg install momo-full_*.ipk
+opkg update
+opkg install ./*.ipk
 ```
 
 ### 使用 GitHub Actions 产物安装
@@ -106,15 +103,12 @@ opkg install momo-full_*.ipk
 1. 打开本仓库的 `Actions`。
 2. 运行 `release-packages` 工作流。
 3. 下载生成的 `feed_momo_x86_64-openwrt-24.10` artifact。
-4. 将 `.ipk` 或 `.apk` 软件包上传到路由器。
-5. 手动安装：
+4. 将 `.ipk` 软件包上传到路由器。
+5. 一次性安装下载的所有 Momo 软件包：
 
 ```sh
-# opkg 固件
-opkg install momo-full_*.ipk
-
-# apk 固件
-apk add --allow-untrusted momo-full-*.apk
+opkg update
+opkg install ./*.ipk
 ```
 
 ### 使用 OpenWrt SDK 编译
@@ -130,14 +124,11 @@ make package/momo/compile V=s
 make package/luci-app-momo/compile V=s
 ```
 
-编译后的软件包位于 `bin/packages/<architecture>/momo`。把软件包上传到路由器后安装：
+编译后的软件包位于 `bin/packages/<architecture>/momo`。把生成的 Momo 软件包上传到路由器后一次性安装：
 
 ```sh
-# opkg 固件
-opkg install momo-full_*.ipk
-
-# apk 固件
-apk add --allow-untrusted momo-full-*.apk
+opkg update
+opkg install ./*.ipk
 ```
 
 ## 快速开始

@@ -54,6 +54,7 @@ https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo/
 ```
 
 The current release workflow publishes `OpenWrt 24.10` packages for `x86_64`.
+The current public build publishes opkg/ipk packages only.
 When manually running `Actions` -> `release-packages`, set `release_tag` to the version you want to publish, for example `v1.2.3`.
 
 ### One-Command Install
@@ -64,7 +65,7 @@ For supported systems, run:
 wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.sh | ash
 ```
 
-This script adds the package signing key, adds the GitHub Pages feed, updates the package index, and installs `momo-full`.
+This script adds the package signing key, adds the GitHub Pages feed, updates the package index, and installs `momo-full`. The `momo-full` entry package installs Momo, LuCI, Chinese translation, and the local subconverter package.
 
 ### Manual Feed Install
 
@@ -77,13 +78,8 @@ wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/feed.sh |
 Install packages:
 
 ```sh
-# opkg
 opkg update
 opkg install momo-full
-
-# apk
-apk update
-apk add momo-full
 ```
 
 ### Install From GitHub Releases
@@ -91,12 +87,13 @@ apk add momo-full
 If you need the raw package files, download them from the Releases page:
 
 1. Open `Releases` in this repository.
-2. Download the package files for `openwrt-24.10 x86_64`.
+2. Download all `.ipk` package files for `openwrt-24.10 x86_64`.
 3. Copy the `.ipk` packages to the router.
-4. Install them manually:
+4. Install all downloaded Momo packages together:
 
 ```sh
-opkg install momo-full_*.ipk
+opkg update
+opkg install ./*.ipk
 ```
 
 ### Install From GitHub Actions Artifacts
@@ -106,15 +103,12 @@ If a release has not been published yet, use the workflow artifact directly:
 1. Open `Actions` in this repository.
 2. Run the `release-packages` workflow.
 3. Download the generated `feed_momo_x86_64-openwrt-24.10` artifact.
-4. Copy the `.ipk` or `.apk` packages to the router.
-5. Install them manually:
+4. Copy the `.ipk` packages to the router.
+5. Install all downloaded Momo packages together:
 
 ```sh
-# opkg firmware
-opkg install momo-full_*.ipk
-
-# apk firmware
-apk add --allow-untrusted momo-full-*.apk
+opkg update
+opkg install ./*.ipk
 ```
 
 ### Build With OpenWrt SDK
@@ -130,14 +124,11 @@ make package/momo/compile V=s
 make package/luci-app-momo/compile V=s
 ```
 
-The generated packages are under `bin/packages/<architecture>/momo`. Copy them to the router and install them:
+The generated packages are under `bin/packages/<architecture>/momo`. Copy the generated Momo packages to the router and install them together:
 
 ```sh
-# opkg firmware
-opkg install momo-full_*.ipk
-
-# apk firmware
-apk add --allow-untrusted momo-full-*.apk
+opkg update
+opkg install ./*.ipk
 ```
 
 ## Quick Start

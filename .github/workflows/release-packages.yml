@@ -114,7 +114,7 @@ jobs:
           touch public/.nojekyll
           echo "${{ secrets.KEY_BUILD_PUB }}" > public/key-build.pub
           echo "${{ secrets.PUBLIC_KEY }}" > public/public-key.pem
-          tree --dirsfirst --sort name -P '*.apk|*.ipk' --prune --noreport -H "" -T "Momo's Feed" --charset utf-8 -o public/index.html public
+          tree --dirsfirst --sort name -P '*.ipk' --prune --noreport -H "" -T "Momo's Feed" --charset utf-8 -o public/index.html public
           sed -i '/<p class="VERSION">/,/<\/p>/d' public/index.html
 
       - name: configure pages

@@ -53,21 +53,8 @@ if [ -x "/bin/opkg" ]; then
 	echo "install momo-full"
 	opkg install momo-full
 elif [ -x "/usr/bin/apk" ]; then
-	# add key
-	echo "add key"
-	wget -O "/etc/apk/keys/momo.pem" "$repository_url/public-key.pem"
-	# add feed
-	echo "add feed"
-	if grep -q momo /etc/apk/repositories.d/customfeeds.list; then
-		sed -i '/momo/d' /etc/apk/repositories.d/customfeeds.list
-	fi
-	echo "$feed_url/packages.adb" >> /etc/apk/repositories.d/customfeeds.list
-	# update feeds
-	echo "update feeds"
-	apk update
-	# install entry package from feed
-	echo "install momo-full"
-	apk add --allow-untrusted -X $feed_url/packages.adb momo-full
+	echo "apk-based firmware is detected, but the current public feed only publishes opkg/ipk packages"
+	exit 1
 fi
 
 echo "success" 

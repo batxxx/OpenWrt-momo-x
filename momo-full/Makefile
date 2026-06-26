@@ -14,12 +14,13 @@ define Package/momo-full
   CATEGORY:=Network
   TITLE:=Complete Momo installation entry package
   URL:=https://github.com/batxxx/OpenWrt-momo-x
-  DEPENDS:=+momo +luci-app-momo +luci-i18n-momo-zh-cn
+  DEPENDS:=+momo +momo-subconverter +luci-app-momo +luci-i18n-momo-zh-cn
   PKGARCH:=all
 endef
 
 define Package/momo-full/description
-  Meta package for installing Momo service, LuCI app, and Chinese translation.
+  Meta package for installing Momo service, local subconverter, LuCI app,
+  and Chinese translation.
 endef
 
 define Build/Compile
