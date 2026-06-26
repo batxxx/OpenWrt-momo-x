@@ -241,9 +241,18 @@ return view.extend({
             return uci.get('momo', section_id, 'remark') || '-';
         };
 
-        o = s.option(form.Value, 'url', '订阅链接');
+        o = s.option(form.DummyValue, '_url_display', '订阅链接');
         o.modalonly = false;
-        o.rmempty = false;
+        o.cfgvalue = function (section_id) {
+            return displayValue(uci.get('momo', section_id, 'url') || uci.get('momo', section_id, 'info_url'));
+        };
+
+        o = s.option(form.Value, 'url', '订阅链接');
+        o.modalonly = true;
+        o.rmempty = true;
+        o.cfgvalue = function (section_id) {
+            return uci.get('momo', section_id, 'url') || uci.get('momo', section_id, 'info_url') || '';
+        };
 
         o = s.option(form.ListValue, 'success', '状态');
         o.modalonly = false;
@@ -304,6 +313,7 @@ return view.extend({
 
         o = s.option(form.Value, 'info_url', '订阅信息链接');
         o.modalonly = true;
+        o.description = '可选；如果订阅链接为空，会用这里的链接作为兼容回退。';
 
         o = s.option(form.Value, 'remark', '备注');
         o.modalonly = true;

@@ -303,27 +303,74 @@ function ensure_dns(profile) {
 	}
 
 	let has_direct_dns = false;
+	let server_tags = {};
+	let servers = [];
 	for (let server in profile.dns.servers) {
+		if (server == null || type(server) != 'object') {
+			continue;
+		}
+
+		if (server.address_resolver != null && server.domain_resolver == null) {
+			server.domain_resolver = server.address_resolver;
+		}
+		delete server.address_resolver;
+
+		if (server?.tag == 'dns_direct') {
+			server.tag = 'dns-direct';
+		}
 		if (server?.tag == 'dns-direct') {
 			server.type = 'udp';
 			if (server.server == null || length(server.server) == 0) {
 				server.server = server.address ?? '223.5.5.5';
 			}
+			if (index(server.server, '://') >= 0 || server.server == 'fakeip') {
+				server.server = '223.5.5.5';
+			}
 			delete server.address;
 			delete server.detour;
+			delete server.domain_resolver;
 			has_direct_dns = true;
 		}
+
+		// Drop legacy sing-box DNS servers such as {"address": "tls://..."}.
+		// sing-box 1.12 can reject mixed legacy/new resolver references.
+		if (server.address != null || server.type == null) {
+			continue;
+		}
+		if (server.tag == null || length(server.tag) == 0) {
+			continue;
+		}
+		server_tags[server.tag] = true;
+		push(servers, server);
 	}
 
 	if (!has_direct_dns) {
-		push(profile.dns.servers, {
+		server_tags['dns-direct'] = true;
+		push(servers, {
 			type: 'udp',
 			tag: 'dns-direct',
 			server: '223.5.5.5'
 		});
 	}
 
+	let rules = [];
+	for (let rule in profile.dns.rules || []) {
+		if (rule == null || type(rule) != 'object') {
+			continue;
+		}
+		if (rule.geoip != null || rule.geosite != null) {
+			continue;
+		}
+		if (rule.server != null && !server_tags[rule.server]) {
+			continue;
+		}
+		push(rules, rule);
+	}
+
+	profile.dns.servers = servers;
+	profile.dns.rules = rules;
 	profile.dns.final = 'dns-direct';
+	delete profile.dns.fakeip;
 	if (profile.dns.independent_cache == null) {
 		profile.dns.independent_cache = true;
 	}
