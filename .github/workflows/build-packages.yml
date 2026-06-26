@@ -24,8 +24,9 @@ jobs:
         env:
           ARCH: ${{ matrix.arch }}-${{ matrix.branch }}
           FEEDNAME: momox
-          PACKAGES: momo-x-full
+          PACKAGES: momo-x momo-x-subconverter luci-app-momo momo-x-full
           NO_REFRESH_CHECK: true
+          NO_SHFMT_CHECK: true
 
       - name: upload
         uses: actions/upload-artifact@v7

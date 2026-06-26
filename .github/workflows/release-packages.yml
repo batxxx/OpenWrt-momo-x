@@ -43,11 +43,12 @@ jobs:
         env:
           ARCH: ${{ matrix.arch }}-${{ matrix.branch }}
           FEEDNAME: momox
-          PACKAGES: momo-x-full
+          PACKAGES: momo-x momo-x-subconverter luci-app-momo momo-x-full
           INDEX: 1
           KEY_BUILD: ${{ secrets.KEY_BUILD }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           NO_REFRESH_CHECK: true
+          NO_SHFMT_CHECK: true
 
       - name: compress
         run: |

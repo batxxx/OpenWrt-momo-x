@@ -141,7 +141,7 @@ make package/feeds/momox/luci-app-momo/compile V=s
 make package/feeds/momox/momo-x-full/compile V=s
 ```
 
-编译后的软件包位于 `bin/packages/<architecture>/momo-x`。把生成的 Momo-X 软件包上传到路由器后一次性安装：
+编译后的软件包位于 `bin/packages/<architecture>/momox`。把生成的 Momo-X 软件包上传到路由器后一次性安装：
 
 ```sh
 opkg update
@@ -372,7 +372,7 @@ make package/feeds/momox/luci-app-momo/compile V=s
 make package/feeds/momox/momo-x-full/compile V=s
 ```
 
-编译后的软件包位于 `bin/packages/<architecture>/momo-x`。
+编译后的软件包位于 `bin/packages/<architecture>/momox`。
 
 ## 工作原理
 

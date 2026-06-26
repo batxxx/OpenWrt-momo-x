@@ -51,7 +51,7 @@ if [ -x "/bin/opkg" ]; then
 	echo "update feeds"
 	opkg update
 	# remove legacy pre-Momo-X packages before installing renamed packages
-	if opkg list-installed momo 2>/dev/null | grep -q '^momo -'; then
+	if opkg list-installed momo momo-full momo-subconverter 2>/dev/null | grep -Eq '^(momo|momo-full|momo-subconverter) -'; then
 		echo "remove legacy momo packages"
 		for pkg in momo-full $(opkg list-installed luci-i18n-momo-* 2>/dev/null | cut -d ' ' -f 1) luci-app-momo momo-subconverter momo; do
 			[ -n "$pkg" ] && opkg remove "$pkg" 2>/dev/null || true

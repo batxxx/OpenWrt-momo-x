@@ -4,7 +4,7 @@
 
 enabled=`uci get momo.config.enabled`
 
-if [ "$enabled" == "0" ]; then
+if [ "$enabled" = "0" ]; then
 	uci set momo.config.enabled=1
 	uci commit momo
 	/etc/init.d/momo restart
@@ -29,10 +29,10 @@ uname -a
 \`\`\`
 `
 if [ -x "/bin/opkg" ]; then
-	opkg list-installed "momo"
+	opkg list-installed "momo-x"
 	opkg list-installed "luci-app-momo"
 elif [ -x "/usr/bin/apk" ]; then
-	apk list -I "momo"
+	apk list -I "momo-x"
 	apk list -I "luci-app-momo"
 fi
 `
@@ -336,7 +336,7 @@ nft list table inet momo
 \`\`\`
 "
 
-if [ "$enabled" == "0" ]; then
+if [ "$enabled" = "0" ]; then
 	uci set momo.config.enabled=0
 	uci commit momo
 	/etc/init.d/momo restart

@@ -141,7 +141,7 @@ make package/feeds/momox/luci-app-momo/compile V=s
 make package/feeds/momox/momo-x-full/compile V=s
 ```
 
-The generated packages are under `bin/packages/<architecture>/momo-x`. Copy the generated Momo-X packages to the router and install them together:
+The generated packages are under `bin/packages/<architecture>/momox`. Copy the generated Momo-X packages to the router and install them together:
 
 ```sh
 opkg update
@@ -372,7 +372,7 @@ make package/feeds/momox/luci-app-momo/compile V=s
 make package/feeds/momox/momo-x-full/compile V=s
 ```
 
-Package files will be generated under `bin/packages/<architecture>/momo-x`.
+Package files will be generated under `bin/packages/<architecture>/momox`.
 
 ## How It Works
 
