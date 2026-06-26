@@ -40,9 +40,12 @@ Recommended packages:
 
 ## Installation
 
-### Published Package Feed
+### Published Packages
 
-This fork publishes its package feed with GitHub Pages instead of GitHub Releases.
+This fork publishes installable packages in two places:
+
+- GitHub Pages package feed, recommended for normal installation.
+- GitHub Releases, useful when you want to download the `.ipk` files directly.
 
 The current public feed is:
 
@@ -51,7 +54,7 @@ https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo/
 ```
 
 The current release workflow publishes `OpenWrt 24.10` packages for `x86_64`.
-GitHub Releases are not created automatically, so the Releases page may be empty.
+When manually running `Actions` -> `release-packages`, set `release_tag` to the version you want to publish, for example `v1.2.3`.
 
 ### One-Command Install
 
@@ -83,9 +86,22 @@ apk update
 apk add momo-full
 ```
 
+### Install From GitHub Releases
+
+If you need the raw package files, download them from the Releases page:
+
+1. Open `Releases` in this repository.
+2. Download the package files for `openwrt-24.10 x86_64`.
+3. Copy the `.ipk` packages to the router.
+4. Install them manually:
+
+```sh
+opkg install momo-full_*.ipk
+```
+
 ### Install From GitHub Actions Artifacts
 
-If you need the raw package files, use the workflow artifact directly:
+If a release has not been published yet, use the workflow artifact directly:
 
 1. Open `Actions` in this repository.
 2. Run the `release-packages` workflow.

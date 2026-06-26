@@ -2,6 +2,16 @@ name: release-packages
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "GitHub Release tag, for example v1.2.3. Leave empty to use momo-<run_number>."
+        required: false
+        type: string
+      prerelease:
+        description: "Mark the GitHub Release as a pre-release."
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -51,6 +61,27 @@ jobs:
         with:
           name: feed_momo_${{ matrix.arch }}-${{ matrix.branch }}
           path: feed_momo_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz
+
+      - name: publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag || format('momo-{0}', github.run_number) }}
+          name: Momo ${{ inputs.release_tag || format('momo-{0}', github.run_number) }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ inputs.prerelease }}
+          fail_on_unmatched_files: true
+          files: |
+            public/${{ matrix.branch }}/${{ matrix.arch }}/momo/*.ipk
+            momo_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz
+            feed_momo_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz
+          body: |
+            Momo packages for OpenWrt 24.10 x86_64.
+
+            Install from the GitHub Pages feed:
+
+            ```sh
+            wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.sh | ash
+            ```
 
   feed:
     needs: release
