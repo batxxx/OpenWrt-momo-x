@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=momo-x
 PKG_VERSION:=2026.06.03
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 
 PKG_LICENSE:=GPL-3.0+
 PKG_MAINTAINER:=Joseph Mory <morytyann@gmail.com>
@@ -62,6 +62,18 @@ define Package/momo-x/install
 
 	$(INSTALL_DIR) $(1)/lib/upgrade/keep.d
 	$(INSTALL_DATA) $(CURDIR)/files/momo.upgrade $(1)/lib/upgrade/keep.d/momo
+endef
+
+define Package/momo-x/postinst
+#!/bin/sh
+[ -n "$${IPKG_INSTROOT}" ] && exit 0
+if [ -x /etc/init.d/momo-subconverter ]; then
+	/etc/init.d/momo-subconverter enable 2>/dev/null || true
+	if [ "$$(uci -q get momo.local_subconverter.enabled)" = "1" ]; then
+		/etc/init.d/momo-subconverter restart 2>/dev/null || true
+	fi
+fi
+exit 0
 endef
 
 define Package/momo-x/postrm

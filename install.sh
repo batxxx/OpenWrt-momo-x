@@ -57,9 +57,9 @@ if [ -x "/bin/opkg" ]; then
 			[ -n "$pkg" ] && opkg remove "$pkg" 2>/dev/null || true
 		done
 	fi
-	# install entry package from feed
-	echo "install momo-x-full"
-	opkg install momo-x-full
+	# install packages from feed
+	echo "install momo-x packages"
+	opkg install momo-x momo-x-subconverter luci-app-momo luci-i18n-momo-zh-cn momo-x-full
 elif [ -x "/usr/bin/apk" ]; then
 	echo "apk-based firmware is detected, but the current public feed only publishes opkg/ipk packages"
 	exit 1
