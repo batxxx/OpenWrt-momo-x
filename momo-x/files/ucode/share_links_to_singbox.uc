@@ -467,8 +467,9 @@ function build_profile(nodes) {
 		dns: {
 			servers: [
 				{
+					type: 'udp',
 					tag: 'dns-direct',
-					address: '223.5.5.5'
+					server: '223.5.5.5'
 				}
 			],
 			final: 'dns-direct'

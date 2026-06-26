@@ -314,15 +314,33 @@ function ensure_dns(profile) {
 		profile.dns = {};
 	}
 	if (type(profile.dns.servers) != 'array' || length(profile.dns.servers) == 0) {
-		profile.dns.servers = [
-			{
-				tag: 'dns-direct',
-				address: '223.5.5.5'
-			}
-		];
+		profile.dns.servers = [];
 	}
-	if (profile.dns.final == null) {
-		profile.dns.final = profile.dns.servers[0].tag ?? 'dns-direct';
+
+	let has_direct_dns = false;
+	for (let server in profile.dns.servers) {
+		if (server?.tag == 'dns-direct') {
+			server.type = 'udp';
+			if (server.server == null || length(server.server) == 0) {
+				server.server = server.address ?? '223.5.5.5';
+			}
+			delete server.address;
+			delete server.detour;
+			has_direct_dns = true;
+		}
+	}
+
+	if (!has_direct_dns) {
+		push(profile.dns.servers, {
+			type: 'udp',
+			tag: 'dns-direct',
+			server: '223.5.5.5'
+		});
+	}
+
+	profile.dns.final = 'dns-direct';
+	if (profile.dns.independent_cache == null) {
+		profile.dns.independent_cache = true;
 	}
 }
 

@@ -248,6 +248,7 @@ table inet momo {
 	{% if (router_proxy): %}
 	{% if (length(dns_hijack_nfproto) > 0): %}
 	chain router_dns_hijack {
+		meta nfproto @dns_hijack_nfproto meta l4proto { tcp, udp } meta skuid 0 th dport 53 counter return #
 		{% for (let access_control in router_access_control): %}
 		{% if (length(access_control['user']) == 0 && length(access_control['group']) == 0 && length(access_control['cgroup']) == 0): %}
 		meta nfproto @dns_hijack_nfproto meta l4proto { tcp, udp } th dport 53 counter {% if (access_control['dns']): %} redirect to :{{ dns_port }} {% else %} return {% endif %} #
