@@ -762,14 +762,46 @@ update_subscription() {
 			curl -s -f -m 120 --connect-timeout 15 --retry 3 -L -X GET -A "$subscription_user_agent" -D "$header_file" -o "$output_file" "$url" > /dev/null 2>&1
 		fi
 	}
+	subscription_fast_curl() {
+		local header_file output_file url
+		header_file="$1"
+		output_file="$2"
+		url="$3"
+		if [ "$subscription_allow_insecure" = 1 ] && [ -n "$subscription_proxy" ]; then
+			curl -s -f -m 12 --connect-timeout 5 --retry 0 -L -k -x "$subscription_proxy" -X GET -A "$subscription_user_agent" -D "$header_file" -o "$output_file" "$url" > /dev/null 2>&1
+		elif [ "$subscription_allow_insecure" = 1 ]; then
+			curl -s -f -m 12 --connect-timeout 5 --retry 0 -L -k -X GET -A "$subscription_user_agent" -D "$header_file" -o "$output_file" "$url" > /dev/null 2>&1
+		elif [ -n "$subscription_proxy" ]; then
+			curl -s -f -m 12 --connect-timeout 5 --retry 0 -L -x "$subscription_proxy" -X GET -A "$subscription_user_agent" -D "$header_file" -o "$output_file" "$url" > /dev/null 2>&1
+		else
+			curl -s -f -m 12 --connect-timeout 5 --retry 0 -L -X GET -A "$subscription_user_agent" -D "$header_file" -o "$output_file" "$url" > /dev/null 2>&1
+		fi
+	}
+	subscription_local_convert_api() {
+		case "$subscription_convert_api" in
+			http://127.0.0.1:*|https://127.0.0.1:*|http://localhost:*|https://localhost:*)
+				return 0
+				;;
+		esac
+		return 1
+	}
 	subscription_convert_curl() {
-		local header_file output_file list_value
+		local header_file output_file list_value max_time connect_timeout retry_count
 		header_file="$1"
 		output_file="$2"
 		list_value="$3"
 		[ -n "$list_value" ] || list_value="$subscription_convert_rule_provider"
+		if subscription_local_convert_api; then
+			max_time=15
+			connect_timeout=3
+			retry_count=0
+		else
+			max_time=180
+			connect_timeout=20
+			retry_count=2
+		fi
 		if [ "$subscription_allow_insecure" = 1 ] && [ -n "$subscription_proxy" ]; then
-			curl -s -f -m 180 --connect-timeout 20 --retry 2 -L -G -k -x "$subscription_proxy" -A "$subscription_user_agent" -D "$header_file" -o "$output_file" \
+			curl -s -f -m "$max_time" --connect-timeout "$connect_timeout" --retry "$retry_count" -L -G -k -x "$subscription_proxy" -A "$subscription_user_agent" -D "$header_file" -o "$output_file" \
 				--data-urlencode "target=$subscription_convert_target" \
 				--data-urlencode "url=$subscription_url" \
 				--data-urlencode "config=$subscription_convert_template" \
@@ -785,7 +817,7 @@ update_subscription() {
 				--data-urlencode "exclude_invalid=$subscription_exclude_invalid" \
 				"$subscription_convert_api" > /dev/null 2>&1
 		elif [ "$subscription_allow_insecure" = 1 ]; then
-			curl -s -f -m 180 --connect-timeout 20 --retry 2 -L -G -k -A "$subscription_user_agent" -D "$header_file" -o "$output_file" \
+			curl -s -f -m "$max_time" --connect-timeout "$connect_timeout" --retry "$retry_count" -L -G -k -A "$subscription_user_agent" -D "$header_file" -o "$output_file" \
 				--data-urlencode "target=$subscription_convert_target" \
 				--data-urlencode "url=$subscription_url" \
 				--data-urlencode "config=$subscription_convert_template" \
@@ -801,7 +833,7 @@ update_subscription() {
 				--data-urlencode "exclude_invalid=$subscription_exclude_invalid" \
 				"$subscription_convert_api" > /dev/null 2>&1
 		elif [ -n "$subscription_proxy" ]; then
-			curl -s -f -m 180 --connect-timeout 20 --retry 2 -L -G -x "$subscription_proxy" -A "$subscription_user_agent" -D "$header_file" -o "$output_file" \
+			curl -s -f -m "$max_time" --connect-timeout "$connect_timeout" --retry "$retry_count" -L -G -x "$subscription_proxy" -A "$subscription_user_agent" -D "$header_file" -o "$output_file" \
 				--data-urlencode "target=$subscription_convert_target" \
 				--data-urlencode "url=$subscription_url" \
 				--data-urlencode "config=$subscription_convert_template" \
@@ -817,7 +849,7 @@ update_subscription() {
 				--data-urlencode "exclude_invalid=$subscription_exclude_invalid" \
 				"$subscription_convert_api" > /dev/null 2>&1
 		else
-			curl -s -f -m 180 --connect-timeout 20 --retry 2 -L -G -A "$subscription_user_agent" -D "$header_file" -o "$output_file" \
+			curl -s -f -m "$max_time" --connect-timeout "$connect_timeout" --retry "$retry_count" -L -G -A "$subscription_user_agent" -D "$header_file" -o "$output_file" \
 				--data-urlencode "target=$subscription_convert_target" \
 				--data-urlencode "url=$subscription_url" \
 				--data-urlencode "config=$subscription_convert_template" \
@@ -858,7 +890,7 @@ update_subscription() {
 		[ "$subscription_convert_target" = "singbox" ] || return 1
 		[ -f "$SHARE_LINKS_TO_SINGBOX_UC" ] || return 1
 		log "Profile" "Try built-in share-link parser."
-		if ! subscription_curl "$subscription_header_tmpfile" "$raw_file" "$subscription_url"; then
+		if ! subscription_fast_curl "$subscription_header_tmpfile" "$raw_file" "$subscription_url"; then
 			subscription_error="Download failed"
 			rm -f "$raw_file" "$parser_log"
 			return 1
@@ -875,13 +907,42 @@ update_subscription() {
 		rm -f "$raw_file" "$parser_log"
 		return 1
 	}
+	subscription_merge_share_links() {
+		local raw_file raw_header_file merge_log
+		raw_file="$TEMP_DIR/$subscription_section.raw"
+		raw_header_file="$TEMP_DIR/$subscription_section.raw.header"
+		merge_log="$TEMP_DIR/$subscription_section.share-links.merge.log"
+		[ "$subscription_convert_target" = "singbox" ] || return 1
+		[ -f "$SHARE_LINKS_TO_SINGBOX_UC" ] || return 1
+		[ -f "$subscription_tmpfile" ] || return 1
+
+		if [ ! -f "$raw_file" ]; then
+			if ! subscription_fast_curl "$raw_header_file" "$raw_file" "$subscription_url"; then
+				log "Profile" "Skip share-link merge: failed to download raw subscription."
+				rm -f "$raw_file" "$raw_header_file" "$merge_log"
+				return 1
+			fi
+		fi
+
+		if ucode -S "$SHARE_LINKS_TO_SINGBOX_UC" "$raw_file" "$subscription_tmpfile" merge > "$merge_log" 2>&1; then
+			log "Profile" "$(tail -n 1 "$merge_log")"
+			rm -f "$raw_file" "$raw_header_file" "$merge_log"
+			return 0
+		fi
+
+		log "Profile" "Skip share-link merge: $(tail -n 1 "$merge_log" 2>/dev/null)"
+		rm -f "$raw_file" "$raw_header_file" "$merge_log"
+		return 1
+	}
 	# fetch subscription info
 	if [ -n "$subscription_info_url" ]; then
 		log "Profile" "Fetch subscription info."
-		if subscription_curl "$subscription_info_header_tmpfile" "/dev/null" "$subscription_info_url"; then
+		if subscription_fast_curl "$subscription_info_header_tmpfile" "/dev/null" "$subscription_info_url"; then
 			if [ ! -f "$subscription_info_file" ] && grep -q -i "subscription-userinfo:" "$subscription_info_header_tmpfile"; then
 				subscription_info_file="$subscription_info_header_tmpfile"
 			fi
+		else
+			log "Profile" "Skip subscription info: failed to fetch quickly."
 		fi
 	fi
 	# download subscription
@@ -909,11 +970,15 @@ update_subscription() {
 				fi
 			fi
 			if [ "$subscription_curl_result" != 0 ]; then
-				log "Profile" "Fallback to node-list compatible conversion."
-				subscription_normalized=
-				subscription_validated=
-				subscription_curl_result=0
-				subscription_convert_curl "$subscription_header_tmpfile" "$subscription_tmpfile" "$subscription_convert_rule_provider" || subscription_curl_result="$?"
+				if subscription_local_convert_api && [ ! -s "$subscription_tmpfile" ]; then
+					log "Profile" "Local converter returned no profile; skip duplicate node-list conversion."
+				else
+					log "Profile" "Fallback to node-list compatible conversion."
+					subscription_normalized=
+					subscription_validated=
+					subscription_curl_result=0
+					subscription_convert_curl "$subscription_header_tmpfile" "$subscription_tmpfile" "$subscription_convert_rule_provider" || subscription_curl_result="$?"
+				fi
 			fi
 		else
 			subscription_curl_result=0
@@ -924,9 +989,19 @@ update_subscription() {
 		subscription_curl "$subscription_header_tmpfile" "$subscription_tmpfile" "$subscription_url" || subscription_curl_result="$?"
 	fi
 	if [ "$subscription_convert" = 1 ] && [ "$subscription_convert_target" = "singbox" ] && [ "$subscription_curl_result" != 0 ]; then
-		subscription_parse_share_links || true
+		if subscription_local_convert_api && [ ! -s "$subscription_tmpfile" ]; then
+			log "Profile" "Skip built-in share-link parser: local converter produced no profile."
+		else
+			subscription_parse_share_links || true
+		fi
 	fi
 	if [ "$subscription_curl_result" = 0 ]; then
+		if [ "$subscription_convert" = 1 ] && [ "$subscription_convert_target" = "singbox" ]; then
+			if subscription_merge_share_links; then
+				subscription_normalized=
+				subscription_validated=
+			fi
+		fi
 		if [ -z "$subscription_normalized" ] && [ -f "$PROFILE_NORMALIZE_UC" ]; then
 			ucode -S "$PROFILE_NORMALIZE_UC" "$subscription_tmpfile" > /dev/null 2>&1 || log "Profile" "Failed to normalize subscription profile."
 		fi

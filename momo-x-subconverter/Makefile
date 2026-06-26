@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=momo-x-subconverter
-PKG_VERSION:=0.9.0
-PKG_RELEASE:=3
+PKG_VERSION:=0.9.9
+PKG_RELEASE:=1
 
 PKG_SOURCE:=subconverter_linux64.tar.gz
-PKG_SOURCE_URL:=https://github.com/tindy2013/subconverter/releases/download/v$(PKG_VERSION)
-PKG_HASH:=884a6d1168267eba076fcdd5171215bacf98c17948ab526e4cbbdcad5f7a0217
+PKG_SOURCE_URL:=https://github.com/asdlokj1qpi233/subconverter/releases/download/v$(PKG_VERSION)
+PKG_HASH:=b9d6f969300d3c8398f9d970db7436274df0ff3e7c91d935d26bbd79fafc8488
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 
 PKG_LICENSE:=GPL-3.0
@@ -18,7 +18,7 @@ define Package/momo-x-subconverter
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Local subconverter service files for Momo-X
-  URL:=https://github.com/tindy2013/subconverter
+  URL:=https://github.com/asdlokj1qpi233/subconverter
   EXTRA_DEPENDS:=momo-x
   CONFLICTS:=momo-subconverter
 endef

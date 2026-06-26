@@ -482,9 +482,157 @@ function build_profile(nodes) {
 	};
 }
 
+function is_node_outbound(outbound) {
+	return outbound != null &&
+		type(outbound) == 'object' &&
+		outbound.type != 'direct' &&
+		outbound.type != 'block' &&
+		outbound.type != 'dns' &&
+		outbound.type != 'selector' &&
+		outbound.type != 'urltest';
+}
+
+function node_key(outbound) {
+	if (!is_node_outbound(outbound)) {
+		return '';
+	}
+
+	let identity = outbound.uuid || outbound.password || outbound.method || outbound.tag || '';
+	return join('|', [
+		outbound.type || '',
+		outbound.server || '',
+		outbound.server_port || '',
+		identity
+	]);
+}
+
+function unique_profile_tag(base, tags) {
+	base = trim(base || 'node');
+	if (length(base) == 0) {
+		base = 'node';
+	}
+
+	let tag = base;
+	let index = 2;
+	while (tags[tag]) {
+		tag = base + '-' + index;
+		index++;
+	}
+	tags[tag] = true;
+	return tag;
+}
+
+function append_nodes_to_groups(profile, new_tags) {
+	if (length(new_tags) == 0) {
+		return;
+	}
+
+	let node_tags = {};
+	for (let outbound in profile.outbounds || []) {
+		if (is_node_outbound(outbound) && outbound.tag != null && length(outbound.tag) > 0) {
+			node_tags[outbound.tag] = true;
+		}
+	}
+
+	for (let outbound in profile.outbounds || []) {
+		if (outbound == null || type(outbound) != 'object') {
+			continue;
+		}
+		if (outbound.type != 'selector' && outbound.type != 'urltest') {
+			continue;
+		}
+		if (type(outbound.outbounds) != 'array') {
+			outbound.outbounds = [];
+		}
+
+		let seen = {};
+		let has_node_ref = false;
+		for (let ref in outbound.outbounds) {
+			if (ref == null || length(ref) == 0) {
+				continue;
+			}
+			seen[ref] = true;
+			if (node_tags[ref]) {
+				has_node_ref = true;
+			}
+		}
+
+		if (!has_node_ref && outbound.type != 'urltest' && outbound.tag != 'proxy' && outbound.tag != 'Proxies') {
+			continue;
+		}
+
+		for (let tag in new_tags) {
+			if (!seen[tag]) {
+				push(outbound.outbounds, tag);
+				seen[tag] = true;
+			}
+		}
+	}
+}
+
+function merge_profile_nodes(input_path, output_path) {
+	let nodes = parse_nodes(readfile(input_path) || '');
+	if (length(nodes) == 0) {
+		warn('No supported share links were found\n');
+		exit(1);
+	}
+
+	let profile;
+	try {
+		profile = json(readfile(output_path) || '{}');
+	} catch (e) {
+		warn('failed to parse target profile: ' + e + '\n');
+		exit(1);
+	}
+
+	if (profile == null || type(profile) != 'object') {
+		profile = {};
+	}
+	if (type(profile.outbounds) != 'array') {
+		profile.outbounds = [];
+	}
+
+	let keys = {};
+	let tags = {};
+	for (let outbound in profile.outbounds) {
+		if (outbound?.tag != null && length(outbound.tag) > 0) {
+			tags[outbound.tag] = true;
+		}
+
+		const key = node_key(outbound);
+		if (length(key) > 0) {
+			keys[key] = true;
+		}
+	}
+
+	let new_tags = [];
+	let merged = 0;
+	for (let node in nodes) {
+		const key = node_key(node);
+		if (length(key) == 0 || keys[key]) {
+			continue;
+		}
+
+		node.tag = unique_profile_tag(node.tag, tags);
+		keys[key] = true;
+		push(profile.outbounds, node);
+		push(new_tags, node.tag);
+		merged++;
+	}
+
+	append_nodes_to_groups(profile, new_tags);
+	writefile(output_path, sprintf('%J\n', profile));
+	print('Merged ' + merged + ' share-link node(s).\n');
+}
+
 if (!input_path || !output_path) {
 	warn('usage: share_links_to_singbox.uc <input> <output>\n');
 	exit(1);
+}
+
+if (ARGV[2] == 'merge') {
+	merge_profile_nodes(input_path, output_path);
+	exit(0);
 }
 
 let nodes = parse_nodes(readfile(input_path) || '');
