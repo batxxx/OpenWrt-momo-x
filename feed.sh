@@ -18,14 +18,16 @@ case "$DISTRIB_RELEASE" in
 	*"24.10"*)
 		branch="openwrt-24.10"
 		;;
-	*"25.12"*)
-		branch="openwrt-25.12"
-		;;
 	*)
-		echo "unsupported release: $DISTRIB_RELEASE"
+		echo "unsupported release: $DISTRIB_RELEASE, currently only OpenWrt 24.10 is published"
 		exit 1
 		;;
 esac
+
+if [ "$arch" != "x86_64" ]; then
+	echo "unsupported architecture: $arch, currently only x86_64 is published"
+	exit 1
+fi
 
 # feed url
 repository_url="${MOMO_REPOSITORY_URL:-https://batxxx.github.io/OpenWrt-momo-x}"

@@ -40,34 +40,32 @@ Recommended packages:
 
 ## Installation
 
-### Publish The Package Feed
+### Published Package Feed
 
-This fork publishes its package feed with GitHub Pages.
+This fork publishes its package feed with GitHub Pages instead of GitHub Releases.
 
-One-time setup:
-
-1. Open this repository on GitHub.
-2. Go to `Settings` -> `Pages`.
-3. Set `Build and deployment` -> `Source` to `GitHub Actions`.
-4. Go to `Settings` -> `Secrets and variables` -> `Actions`.
-5. Add the package signing secrets required by the release workflow:
-   - `KEY_BUILD`
-   - `KEY_BUILD_PUB`
-   - `PRIVATE_KEY`
-   - `PUBLIC_KEY`
-6. Open `Actions` -> `release-packages` and run the workflow.
-
-After the workflow finishes, the feed is published at:
+The current public feed is:
 
 ```text
-https://batxxx.github.io/OpenWrt-momo-x
+https://batxxx.github.io/OpenWrt-momo-x/openwrt-24.10/x86_64/momo/
 ```
 
-The current release workflow publishes the `x86_64` packages for `openwrt-24.10`.
+The current release workflow publishes `OpenWrt 24.10` packages for `x86_64`.
+GitHub Releases are not created automatically, so the Releases page may be empty.
 
-### Install From Feed
+### One-Command Install
 
-After the GitHub Pages feed has been published, add the feed once:
+For supported systems, run:
+
+```sh
+wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.sh | ash
+```
+
+This script adds the package signing key, adds the GitHub Pages feed, updates the package index, and installs `momo-full`.
+
+### Manual Feed Install
+
+To add the feed without installing immediately, run:
 
 ```sh
 wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/feed.sh | ash
@@ -85,21 +83,13 @@ apk update
 apk add momo-full
 ```
 
-### Install From Release Feed
-
-After the GitHub Pages feed has been published, the install script can download and install the latest package files directly:
-
-```sh
-wget -O - https://github.com/batxxx/OpenWrt-momo-x/raw/refs/heads/main/install.sh | ash
-```
-
 ### Install From GitHub Actions Artifacts
 
-If the feed has not been published yet, use the build artifact directly:
+If you need the raw package files, use the workflow artifact directly:
 
 1. Open `Actions` in this repository.
-2. Run the `build-packages` workflow.
-3. Download the generated artifact.
+2. Run the `release-packages` workflow.
+3. Download the generated `feed_momo_x86_64-openwrt-24.10` artifact.
 4. Copy the `.ipk` or `.apk` packages to the router.
 5. Install them manually:
 
