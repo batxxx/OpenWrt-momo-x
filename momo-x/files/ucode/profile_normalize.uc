@@ -380,6 +380,33 @@ function ensure_dns(profile) {
 	}
 }
 
+function clean_domain(value) {
+	let domain = lc(trim('' + value));
+	if (length(domain) == 0) {
+		return null;
+	}
+	if (substr(domain, 0, 2) == '*.') {
+		domain = substr(domain, 2);
+	}
+	if (match(domain, /^[a-z0-9][a-z0-9.-]*[a-z0-9]$/) && index(domain, '..') < 0) {
+		return domain;
+	}
+	return null;
+}
+
+function direct_domains() {
+	let domains = [];
+	let seen = {};
+	for (let value in uci.get('momo', 'proxy', 'bypass_domain') || []) {
+		const domain = clean_domain(value);
+		if (domain != null && !seen[domain]) {
+			push(domains, domain);
+			seen[domain] = true;
+		}
+	}
+	return domains;
+}
+
 function ensure_route(profile, node_tags) {
 	const dns_inbound_tag = option('core', 'dns_inbound_tag', 'dns-in');
 
@@ -402,6 +429,13 @@ function ensure_route(profile, node_tags) {
 		push(rules, rule);
 	}
 	profile.route.rules = rules;
+	const bypass_domain = direct_domains();
+	if (length(bypass_domain) > 0) {
+		unshift(profile.route.rules, {
+			domain_suffix: bypass_domain,
+			outbound: 'direct'
+		});
+	}
 	if (!has_dns_hijack) {
 		unshift(profile.route.rules, {
 			inbound: dns_inbound_tag,

@@ -183,6 +183,9 @@ return view.extend({
         o = s.taboption('bypass', form.Flag, 'bypass_china_mainland_ip6', _('绕过中国大陆 IPv6'));
         o.rmempty = false;
 
+        o = s.taboption('bypass', form.DynamicList, 'bypass_domain', _('自定义直连域名'));
+        o.placeholder = 'example.com';
+
         o = s.taboption('bypass', form.Value, 'proxy_tcp_dport', _('需要代理的 TCP 目标端口'));
         o.rmempty = false;
         o.value('0-65535', _('所有端口'));
