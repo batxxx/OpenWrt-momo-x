@@ -59,6 +59,8 @@ section_mixin=$(uci -q get momo.mixin); [ -z "$section_mixin" ] && {
 	uci set momo.mixin.log_disabled='0'
 	uci set momo.mixin.log_level='info'
 	uci set momo.mixin.log_timestamp='1'
+	uci add_list momo.mixin.dns_server='119.29.29.29'
+	uci set momo.mixin.dns_fakeip='1'
 	uci set momo.mixin.dns_independent_cache='1'
 	uci set momo.mixin.dns_reverse_mapping='1'
 	uci set momo.mixin.cache_enabled='1'
@@ -67,6 +69,8 @@ section_mixin=$(uci -q get momo.mixin); [ -z "$section_mixin" ] && {
 	uci set momo.mixin.external_control_ui_path='ui'
 	uci set momo.mixin.external_control_ui_download_url='https://github.com/Zephyruso/zashboard/releases/latest/download/dist-cdn-fonts.zip'
 }
+mixin_dns_server=$(uci -q get momo.mixin.dns_server); [ -z "$mixin_dns_server" ] && uci add_list momo.mixin.dns_server='119.29.29.29'
+mixin_dns_fakeip=$(uci -q get momo.mixin.dns_fakeip); [ -z "$mixin_dns_fakeip" ] && uci set momo.mixin.dns_fakeip='1'
 
 # since v1.2.1
 config_clear_at_stop=$(uci -q get momo.log.clear_at_stop); [ -z "$config_clear_at_stop" ] && uci set momo.log.clear_at_stop=1

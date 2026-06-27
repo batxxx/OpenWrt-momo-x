@@ -73,6 +73,50 @@ EOF
 	fi
 }
 
+DNSMASQ_BACKUP_PATH="$HOME_DIR/dnsmasq.backup"
+
+setup_dnsmasq_forward() {
+	local dns_port
+	dns_port="$1"
+	[ -n "$dns_port" ] || return 0
+	[ -x /etc/init.d/dnsmasq ] || return 0
+	uci -q show dhcp.@dnsmasq[0] >/dev/null || return 0
+
+	if [ ! -f "$DNSMASQ_BACKUP_PATH" ]; then
+		{
+			printf 'noresolv=%s\n' "$(uci -q get dhcp.@dnsmasq[0].noresolv)"
+			uci -q get dhcp.@dnsmasq[0].server | sed 's/^/server=/'
+		} > "$DNSMASQ_BACKUP_PATH"
+	fi
+
+	uci set dhcp.@dnsmasq[0].noresolv='1'
+	uci -q delete dhcp.@dnsmasq[0].server
+	uci add_list dhcp.@dnsmasq[0].server="127.0.0.1#$dns_port"
+	uci commit dhcp
+	/etc/init.d/dnsmasq restart >/dev/null 2>&1
+}
+
+restore_dnsmasq_forward() {
+	[ -f "$DNSMASQ_BACKUP_PATH" ] || return 0
+	[ -x /etc/init.d/dnsmasq ] || return 0
+	uci -q show dhcp.@dnsmasq[0] >/dev/null || return 0
+
+	uci -q delete dhcp.@dnsmasq[0].server
+	while IFS='=' read -r key value; do
+		case "$key" in
+			noresolv)
+				[ -n "$value" ] && uci set dhcp.@dnsmasq[0].noresolv="$value" || uci -q delete dhcp.@dnsmasq[0].noresolv
+			;;
+			server)
+				uci add_list dhcp.@dnsmasq[0].server="$value"
+			;;
+		esac
+	done < "$DNSMASQ_BACKUP_PATH"
+	uci commit dhcp
+	rm -f "$DNSMASQ_BACKUP_PATH"
+	/etc/init.d/dnsmasq restart >/dev/null 2>&1
+}
+
 safe_profile_filename() {
 	local name fallback safe
 	name="$1"
@@ -467,14 +511,17 @@ service_started() {
 	local core_only
 	config_get_bool core_only "config" "core_only" 0
 	## core
-	local tun_inbound_tag fake_ip_dns_server_tag
+	local dns_inbound_tag tun_inbound_tag fake_ip_dns_server_tag
+	config_get dns_inbound_tag "core" "dns_inbound_tag"
 	config_get tun_inbound_tag "core" "tun_inbound_tag"
 	config_get fake_ip_dns_server_tag "core" "fake_ip_dns_server_tag"
 	## proxy config
 	### general
-	local ipv4_proxy ipv6_proxy tcp_mode udp_mode tun_timeout tun_interval
+	local ipv4_proxy ipv6_proxy ipv4_dns_hijack ipv6_dns_hijack tcp_mode udp_mode tun_timeout tun_interval
 	config_get_bool ipv4_proxy "proxy" "ipv4_proxy" 0
 	config_get_bool ipv6_proxy "proxy" "ipv6_proxy" 0
+	config_get_bool ipv4_dns_hijack "proxy" "ipv4_dns_hijack" 0
+	config_get_bool ipv6_dns_hijack "proxy" "ipv6_dns_hijack" 0
 	config_get tcp_mode "proxy" "tcp_mode"
 	config_get udp_mode "proxy" "udp_mode"
 	config_get tun_timeout "proxy" "tun_timeout" 30
@@ -502,6 +549,7 @@ service_started() {
 		tun_enable=1
 	fi
 	local tun_device; tun_device=$(jsonfilter -q -i "$RUN_PROFILE_PATH" -e "@['inbounds'][*]" | jsonfilter -q -a -e "@[@['tag']='$tun_inbound_tag']" | jsonfilter -q -a -e "@[@['type']='tun']" | jsonfilter -q -e "@['interface_name']")
+	local dns_port; dns_port=$(jsonfilter -q -i "$RUN_PROFILE_PATH" -e "@['inbounds'][*]" | jsonfilter -q -a -e "@[@['tag']='$dns_inbound_tag']" | jsonfilter -q -a -e "@[@['type']='direct']" | jsonfilter -q -e "@['listen_port']")
 	local fake_ip6_range; fake_ip6_range=$(jsonfilter -q -i "$RUN_PROFILE_PATH" -e "@['dns']['servers'][*]" | jsonfilter -q -a -e "@[@['tag']='$fake_ip_dns_server_tag']" | jsonfilter -q -e "@['inet6_range']")
 	if [ "$core_only" = 0 ]; then
 		# proxy
@@ -578,6 +626,9 @@ service_started() {
 		fi
 		# hijack
 		utpl -S "$HIJACK_UT" | nft -f -
+		if [ "$ipv4_dns_hijack" = 1 ] || [ "$ipv6_dns_hijack" = 1 ]; then
+			setup_dnsmasq_forward "$dns_port"
+		fi
 		# check hijack
 		if nft list tables | grep -q momo; then
 			log "Proxy" "Hijack successful."
@@ -604,6 +655,7 @@ service_triggers() {
 cleanup() {
 	# load config
 	config_load momo
+	restore_dnsmasq_forward
 	# get config
 	## log config
 	local log_clear_at_stop

@@ -325,10 +325,10 @@ function ensure_dns(profile) {
 		if (server?.tag == 'dns-direct') {
 			server.type = 'udp';
 			if (server.server == null || length(server.server) == 0) {
-				server.server = server.address ?? '223.5.5.5';
+				server.server = server.address ?? '119.29.29.29';
 			}
 			if (index(server.server, '://') >= 0 || server.server == 'fakeip') {
-				server.server = '223.5.5.5';
+				server.server = '119.29.29.29';
 			}
 			delete server.address;
 			delete server.detour;
@@ -353,7 +353,7 @@ function ensure_dns(profile) {
 		push(servers, {
 			type: 'udp',
 			tag: 'dns-direct',
-			server: '223.5.5.5'
+			server: '119.29.29.29'
 		});
 	}
 

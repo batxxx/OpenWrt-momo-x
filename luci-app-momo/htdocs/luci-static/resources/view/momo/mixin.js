@@ -54,6 +54,16 @@ return view.extend({
 
         s.tab('dns', _('DNS 配置'));
 
+        o = s.taboption('dns', form.DynamicList, 'dns_server', _('上游 DNS'));
+        o.datatype = 'host';
+        o.placeholder = '119.29.29.29';
+
+        o = s.taboption('dns', form.ListValue, 'dns_fakeip', _('Fake-IP DNS'));
+        o.optional = true;
+        o.placeholder = _('不修改');
+        o.value('0', _('禁用'));
+        o.value('1', _('启用'));
+
         o = s.taboption('dns', form.ListValue, 'dns_strategy', _('DNS 解析策略'));
         o.optional = true;
         o.placeholder = _('不修改');

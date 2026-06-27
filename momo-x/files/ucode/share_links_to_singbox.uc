@@ -469,7 +469,7 @@ function build_profile(nodes) {
 				{
 					type: 'udp',
 					tag: 'dns-direct',
-					server: '223.5.5.5'
+					server: '119.29.29.29'
 				}
 			],
 			final: 'dns-direct'
