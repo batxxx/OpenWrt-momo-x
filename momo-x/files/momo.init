@@ -304,7 +304,9 @@ start_service() {
 		log "Profile" "Use subscription: $subscription_name."
 		local subscription_file; subscription_file="$(subscription_output_file "$subscription_section")"
 		if [ "$subscription_prefer" = "remote" ] || [ ! -f "$subscription_file" ]; then
-			if ! update_subscription "$subscription_section"; then
+			if MOMO_SKIP_ACTIVE_SUBSCRIPTION_RESTART=1 update_subscription "$subscription_section"; then
+				:
+			else
 				if [ "$subscription_prefer" = "remote" ]; then
 					log "Profile" "Subscription update failed."
 					log "App" "Exit."
@@ -718,6 +720,7 @@ update_subscription() {
 	config_get subscription_filter_keywords "$subscription_section" "filter_keywords"
 	config_get subscription_exclude_keywords "$subscription_section" "exclude_keywords"
 	config_get_bool subscription_exclude_invalid "$subscription_section" "exclude_invalid" 1
+	[ -n "$subscription_convert_template" ] || subscription_convert_template="config/momo-x_lhie1_dler.ini"
 	if [ -z "$subscription_url" ] && [ -n "$subscription_info_url" ]; then
 		subscription_url="$subscription_info_url"
 	fi
@@ -749,6 +752,7 @@ update_subscription() {
 	# update subscription
 	log "Profile" "Update subscription: $subscription_name."
 	local success subscription_curl_result subscription_error
+	local restart_active_subscription
 	local subscription_info_header_tmpfile; subscription_info_header_tmpfile="$TEMP_DIR/$subscription_section.info.header"
 	local subscription_header_tmpfile; subscription_header_tmpfile="$TEMP_DIR/$subscription_section.header"
 	local subscription_tmpfile; subscription_tmpfile="$TEMP_DIR/$subscription_section.json"
@@ -1104,6 +1108,11 @@ update_subscription() {
 		rm -f "$subscription_header_tmpfile"
 		mv -f "$subscription_tmpfile" "$subscription_file"
 		$PROG -c "$subscription_file" format -w > /dev/null 2>&1 || log "Profile" "Failed to format subscription profile."
+		local active_profile
+		config_get active_profile "config" "profile"
+		if [ "$active_profile" = "subscription:$subscription_section" ] && [ "$MOMO_SKIP_ACTIVE_SUBSCRIPTION_RESTART" != 1 ]; then
+			restart_active_subscription=1
+		fi
 	elif [ "$success" = 0 ]; then
 		log "Profile" "Subscription update failed."
 		# update subscription info
@@ -1115,6 +1124,10 @@ update_subscription() {
 		rm -f "$subscription_tmpfile"
 	fi
 	uci_commit "momo"
+	if [ "$success" = 1 ] && [ "$restart_active_subscription" = 1 ]; then
+		log "App" "Restart service to apply updated active subscription: $subscription_name."
+		/etc/init.d/momo restart > /dev/null 2>&1 &
+	fi
 	[ "$success" = 1 ] && return 0
 	return 1
 }

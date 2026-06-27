@@ -347,7 +347,7 @@ return view.extend({
         o.value('singbox', 'sing-box');
 
         o = s.option(form.ListValue, 'convert_template', '订阅转换模板');
-        o.default = '';
+        o.default = 'config/momo-x_lhie1_dler.ini';
         o.modalonly = true;
         o.depends('convert', '1');
         o.description = '本地模板会随 momo-x 一起安装，更新订阅时不再从 GitHub 拉取模板和规则集。';
