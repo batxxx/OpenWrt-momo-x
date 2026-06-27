@@ -65,6 +65,9 @@ write_dashboard_config() {
   try { rewriteStorage(window.sessionStorage); } catch (e) {}
 })();
 EOF
+	if [ -f "$ui_dir/index.html" ] && ! grep -q 'src="./config.js"' "$ui_dir/index.html"; then
+		sed -i 's#<script type="module"#<script src="./config.js"></script><script type="module"#' "$ui_dir/index.html"
+	fi
 	if [ -f "$ui_dir/index.html" ] && grep -q 'id="app" data-base-url=' "$ui_dir/index.html"; then
 		sed -i "s#<div id=\"app\" data-base-url=\"[^\"]*\"></div>#<script>document.write('<div id=\"app\" data-base-url=\"' + window.location.protocol + '//' + window.location.hostname + ':$api_port' + '\"></div>')</script>#" "$ui_dir/index.html"
 	fi
