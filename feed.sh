@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # Momo-X feed
 
 # check env
@@ -43,9 +45,10 @@ if [ -x "/bin/opkg" ]; then
 	rm -f "$key_build_pub_file"
 	# add feed
 	echo "add feed"
-	if grep -q 'momo' /etc/opkg/customfeeds.conf; then
-		sed -i '/src\/gz momo-x /d;/src\/gz momo /d' /etc/opkg/customfeeds.conf
-	fi
+	for feed_conf in /etc/opkg/customfeeds.conf /etc/opkg/distfeeds.conf; do
+		[ -f "$feed_conf" ] || continue
+		sed -i '/src\/gz momo-x /d;/src\/gz momo /d;/OpenWrt-momo-x/d;/ghproxy.net.*momo/d' "$feed_conf"
+	done
 	echo "src/gz momo-x $feed_url" >> /etc/opkg/customfeeds.conf
 	# update feeds
 	echo "update feeds"
