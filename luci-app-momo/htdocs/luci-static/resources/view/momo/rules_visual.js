@@ -173,63 +173,13 @@ function installStyle() {
 `));
 }
 
-function safeConfigName(name) {
-    name = String(name || '').trim()
-        .replace(/[\/\\:*?"<>|]/g, '_')
-        .replace(/\s+/g, '_')
-        .replace(/[^A-Za-z0-9._-]/g, '_')
-        .replace(/^_+|_+$/g, '');
-
-    if (!name) {
-        return '';
-    }
-
-    if (!/\.(json|yaml|yml)$/i.test(name)) {
-        name += '.json';
-    }
-
-    return name;
-}
-
-function subscriptionOutputFile(section) {
-    return section.output_file || safeConfigName(section.name || section['.name']) || (section['.name'] + '.json');
-}
-
-function asArray(value) {
-    if (value == null) {
-        return [];
-    }
-    return Array.isArray(value) ? value : [value];
-}
-
-function linesToArray(value) {
-    return String(value || '')
-        .split('\n')
-        .map(function (line) { return line.trim(); })
-        .filter(function (line) { return line.length > 0; });
-}
-
 function setRuleField(rule, field, value) {
-    const items = linesToArray(value);
+    const items = momo.linesToArray(value);
     if (items.length) {
         rule[field] = items;
     } else {
         delete rule[field];
     }
-}
-
-function uniqueItems(items) {
-    const seen = {};
-    const result = [];
-    for (const item of items) {
-        const value = String(item || '').trim();
-        if (!value || seen[value]) {
-            continue;
-        }
-        seen[value] = true;
-        result.push(value);
-    }
-    return result;
 }
 
 function cleanRuleForSave(rule) {
@@ -266,7 +216,7 @@ function isAdvancedRouteRule(rule) {
     }
 
     return ADVANCED_ROUTE_FIELDS.some(function (key) {
-        return asArray(rule[key]).length > 0;
+        return momo.asArray(rule[key]).length > 0;
     }) || rule.type === 'logical';
 }
 
@@ -275,9 +225,9 @@ function mergeDomainRules(entries) {
     for (const field of DOMAIN_ROUTE_FIELDS) {
         const values = [];
         for (const entry of entries) {
-            values.push.apply(values, asArray(entry.rule[field]));
+            values.push.apply(values, momo.asArray(entry.rule[field]));
         }
-        const unique = uniqueItems(values);
+        const unique = momo.uniqueItems(values);
         if (unique.length) {
             merged[field] = unique;
         }
@@ -293,8 +243,8 @@ function applyDomainGroup(entries, merged) {
     const first = entries[0].rule;
     first.outbound = merged.outbound;
     for (const field of DOMAIN_ROUTE_FIELDS) {
-        if (asArray(merged[field]).length) {
-            first[field] = uniqueItems(asArray(merged[field]));
+        if (momo.asArray(merged[field]).length) {
+            first[field] = momo.uniqueItems(momo.asArray(merged[field]));
         } else {
             delete first[field];
         }
@@ -352,13 +302,13 @@ function ruleName(rule, index) {
 
 function populatedFields(rule) {
     return RULE_FIELDS.filter(function ([key]) {
-        return asArray(rule[key]).length > 0;
+        return momo.asArray(rule[key]).length > 0;
     });
 }
 
 function ruleSummary(rule) {
     const parts = populatedFields(rule).map(function ([key, label]) {
-        return label + ' ' + asArray(rule[key]).length;
+        return label + ' ' + momo.asArray(rule[key]).length;
     });
     if (rule.clash_mode) {
         parts.push('模式 ' + rule.clash_mode);
@@ -372,7 +322,7 @@ function ruleSummary(rule) {
 function fieldPreview(rule) {
     const chips = [];
     for (const [key, label] of RULE_FIELDS) {
-        const values = asArray(rule[key]);
+        const values = momo.asArray(rule[key]);
         if (!values.length) {
             continue;
         }
@@ -385,18 +335,8 @@ function fieldPreview(rule) {
     return chips;
 }
 
-function makeOptionSelect(values, selected) {
-    const select = E('select', {}, values.map(function (value) {
-        return E('option', { value: value, selected: value === selected ? 'selected' : null }, value);
-    }));
-    if (selected && !values.includes(selected)) {
-        select.insertBefore(E('option', { value: selected, selected: 'selected' }, selected), select.firstChild);
-    }
-    return select;
-}
-
 function renderRuleField(rule, key, label, pendingFields, rerender) {
-    const textarea = E('textarea', {}, asArray(rule[key]).join('\n'));
+    const textarea = E('textarea', {}, momo.asArray(rule[key]).join('\n'));
     textarea.addEventListener('input', function () {
         setRuleField(rule, key, textarea.value);
     });
@@ -421,7 +361,7 @@ function renderRuleField(rule, key, label, pendingFields, rerender) {
 
 function renderRuleCard(rule, index, outboundTags, expanded, pendingFields, onToggle, onDelete, onSave, onSaveRestart, rerender) {
     const editableOutbound = !!rule.outbound && !rule.action && !rule.clash_mode;
-    const outboundSelect = makeOptionSelect(outboundTags, rule.outbound || '');
+    const outboundSelect = momo.makeOptionSelect(outboundTags, rule.outbound || '');
     outboundSelect.addEventListener('change', function () {
         if (outboundSelect.value) {
             rule.outbound = outboundSelect.value;
@@ -433,7 +373,7 @@ function renderRuleCard(rule, index, outboundTags, expanded, pendingFields, onTo
     const addFieldSelect = E('select', {}, [
         E('option', { value: '' }, '添加输入栏')
     ].concat(RULE_FIELDS.filter(function ([key]) {
-        return asArray(rule[key]).length === 0 && !pendingFields[key];
+        return momo.asArray(rule[key]).length === 0 && !pendingFields[key];
     }).map(function ([key, label]) {
         return E('option', { value: key }, label);
     })));
@@ -446,7 +386,7 @@ function renderRuleCard(rule, index, outboundTags, expanded, pendingFields, onTo
     });
 
     const fields = RULE_FIELDS.filter(function ([key]) {
-        return asArray(rule[key]).length > 0 || pendingFields[key];
+        return momo.asArray(rule[key]).length > 0 || pendingFields[key];
     }).map(function ([key, label]) {
         return renderRuleField(rule, key, label, pendingFields, rerender);
     });
@@ -507,7 +447,7 @@ function renderRuleCard(rule, index, outboundTags, expanded, pendingFields, onTo
 
 function renderDomainGroupCard(view, outboundTags, expanded, pendingFields, onToggle, onDelete, onSave, onSaveRestart, rerender) {
     const merged = mergeDomainRules(view.entries);
-    const outboundSelect = makeOptionSelect(outboundTags, merged.outbound || '');
+    const outboundSelect = momo.makeOptionSelect(outboundTags, merged.outbound || '');
     outboundSelect.addEventListener('change', function () {
         if (outboundSelect.value) {
             merged.outbound = outboundSelect.value;
@@ -519,7 +459,7 @@ function renderDomainGroupCard(view, outboundTags, expanded, pendingFields, onTo
     const addFieldSelect = E('select', {}, [
         E('option', { value: '' }, '添加输入栏')
     ].concat(RULE_FIELDS.filter(function ([key]) {
-        return DOMAIN_ROUTE_FIELDS.includes(key) && asArray(merged[key]).length === 0 && !pendingFields[key];
+        return DOMAIN_ROUTE_FIELDS.includes(key) && momo.asArray(merged[key]).length === 0 && !pendingFields[key];
     }).map(function ([key, label]) {
         return E('option', { value: key }, label);
     })));
@@ -532,7 +472,7 @@ function renderDomainGroupCard(view, outboundTags, expanded, pendingFields, onTo
     });
 
     function renderMergedField(key, label) {
-        const textarea = E('textarea', {}, asArray(merged[key]).join('\n'));
+        const textarea = E('textarea', {}, momo.asArray(merged[key]).join('\n'));
         textarea.addEventListener('input', function () {
             setRuleField(merged, key, textarea.value);
             applyDomainGroup(view.entries, merged);
@@ -558,7 +498,7 @@ function renderDomainGroupCard(view, outboundTags, expanded, pendingFields, onTo
     }
 
     const fields = RULE_FIELDS.filter(function ([key]) {
-        return DOMAIN_ROUTE_FIELDS.includes(key) && (asArray(merged[key]).length > 0 || pendingFields[key]);
+        return DOMAIN_ROUTE_FIELDS.includes(key) && (momo.asArray(merged[key]).length > 0 || pendingFields[key]);
     }).map(function ([key, label]) {
         return renderMergedField(key, label);
     });
@@ -616,14 +556,14 @@ function renderDomainGroupCard(view, outboundTags, expanded, pendingFields, onTo
 }
 
 function renderGroupCard(group, outboundTags, expanded, onToggle, onSave, onSaveRestart, rerender) {
-    const typeSelect = makeOptionSelect(['selector', 'urltest'], group.type || 'selector');
+    const typeSelect = momo.makeOptionSelect(['selector', 'urltest'], group.type || 'selector');
     typeSelect.addEventListener('change', function () {
         group.type = typeSelect.value;
         rerender();
     });
 
     const availableMembers = outboundTags.filter(function (tag) {
-        return tag !== group.tag && !asArray(group.outbounds).includes(tag);
+        return tag !== group.tag && !momo.asArray(group.outbounds).includes(tag);
     });
     const addMemberSelect = E('select', {}, [
         E('option', { value: '' }, '加入节点/节点组')
@@ -634,17 +574,17 @@ function renderGroupCard(group, outboundTags, expanded, onToggle, onSave, onSave
         if (!addMemberSelect.value) {
             return;
         }
-        group.outbounds = uniqueItems(asArray(group.outbounds).concat(addMemberSelect.value));
+        group.outbounds = momo.uniqueItems(momo.asArray(group.outbounds).concat(addMemberSelect.value));
         rerender();
     });
-    const memberList = E('div', { class: 'momo-member-list' }, asArray(group.outbounds).map(function (tag) {
+    const memberList = E('div', { class: 'momo-member-list' }, momo.asArray(group.outbounds).map(function (tag) {
         return E('span', { class: 'momo-member-pill' }, [
             E('span', { class: 'momo-member-name', title: tag }, tag),
             E('button', { type: 'button',
                 class: 'btn cbi-button cbi-button-remove momo-member-remove',
                 click: function (ev) {
                     ev.stopPropagation();
-                    group.outbounds = asArray(group.outbounds).filter(function (item) {
+                    group.outbounds = momo.asArray(group.outbounds).filter(function (item) {
                         return item !== tag;
                     });
                     rerender();
@@ -657,11 +597,11 @@ function renderGroupCard(group, outboundTags, expanded, onToggle, onSave, onSave
         E('div', { class: 'momo-group-summary', click: onToggle }, [
             E('div', {}, [
                 E('div', { class: 'momo-rule-title' }, group.tag || '(未命名组)'),
-                E('div', { class: 'momo-rule-meta' }, (group.type || 'selector') + ' · 成员 ' + asArray(group.outbounds).length)
+                E('div', { class: 'momo-rule-meta' }, (group.type || 'selector') + ' · 成员 ' + momo.asArray(group.outbounds).length)
             ]),
-            E('div', { class: 'momo-chip-row' }, asArray(group.outbounds).slice(0, 4).map(function (tag) {
+            E('div', { class: 'momo-chip-row' }, momo.asArray(group.outbounds).slice(0, 4).map(function (tag) {
                 return E('span', { class: 'momo-chip' }, tag);
-            }).concat(asArray(group.outbounds).length > 4 ? [E('span', { class: 'momo-chip momo-chip-muted' }, '+' + (asArray(group.outbounds).length - 4))] : [])),
+            }).concat(momo.asArray(group.outbounds).length > 4 ? [E('span', { class: 'momo-chip momo-chip-muted' }, '+' + (momo.asArray(group.outbounds).length - 4))] : [])),
             E('span', { class: 'momo-chip momo-chip-muted' }, expanded ? '收起' : '展开')
         ])
     ];
@@ -689,26 +629,12 @@ function renderGroupCard(group, outboundTags, expanded, onToggle, onSave, onSave
             ]),
             E('div', { class: 'momo-field' }, [
                 E('label', {}, '包含的节点/节点组'),
-                asArray(group.outbounds).length ? memberList : E('div', { class: 'momo-empty-note' }, '这个节点组还没有成员，可以从上方下拉加入。')
+                momo.asArray(group.outbounds).length ? memberList : E('div', { class: 'momo-empty-note' }, '这个节点组还没有成员，可以从上方下拉加入。')
             ])
         ]));
     }
 
     return E('div', { class: 'momo-group-card' + (expanded ? ' is-expanded' : '') }, children);
-}
-
-function parseProfile(content) {
-    const profile = JSON.parse(content || '{}');
-    if (!profile.route || typeof profile.route !== 'object' || Array.isArray(profile.route)) {
-        profile.route = {};
-    }
-    if (!Array.isArray(profile.route.rules)) {
-        profile.route.rules = [];
-    }
-    if (!Array.isArray(profile.outbounds)) {
-        profile.outbounds = [];
-    }
-    return profile;
 }
 
 return view.extend({
@@ -735,7 +661,7 @@ return view.extend({
             choices.push({ path: paths.profiles_dir + '/' + profile.name, label: '本地配置：' + profile.name, value: 'file:' + profile.name });
         }
         for (const subscription of subscriptions) {
-            const file = subscriptionOutputFile(subscription);
+            const file = momo.subscriptionOutputFile(subscription);
             const exists = subscriptionFiles.some(function (entry) { return entry.name === file; });
             choices.push({ path: paths.subscriptions_dir + '/' + file, label: '订阅配置：' + (subscription.name || file) + (exists ? '' : '（未生成）'), value: 'subscription:' + subscription['.name'] });
         }
@@ -884,7 +810,7 @@ return view.extend({
 
             return L.resolveDefault(fs.read_direct(path), '').then(function (content) {
                 rawContent = content;
-                profile = parseProfile(content);
+                profile = momo.parseProfile(content);
                 for (const key in expandedRules) {
                     delete expandedRules[key];
                 }

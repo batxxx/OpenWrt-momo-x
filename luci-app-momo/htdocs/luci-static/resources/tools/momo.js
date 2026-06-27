@@ -5,13 +5,6 @@
 'require rpc';
 'require ui';
 
-const callRCList = rpc.declare({
-    object: 'rc',
-    method: 'list',
-    params: ['name'],
-    expect: { '': {} }
-});
-
 const callRCInit = rpc.declare({
     object: 'rc',
     method: 'init',
@@ -170,19 +163,93 @@ return baseclass.extend({
         }, this));
     },
 
+    stopButtonEvent: function (ev) {
+        if (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+        }
+    },
+
+    safeConfigName: function (name) {
+        name = String(name || '').trim()
+            .replace(/[\/\\:*?"<>|]/g, '_')
+            .replace(/\s+/g, '_')
+            .replace(/[^A-Za-z0-9._-]/g, '_')
+            .replace(/^_+|_+$/g, '');
+
+        if (!name) {
+            return '';
+        }
+
+        return /\.(json|yaml|yml)$/i.test(name) ? name : name + '.json';
+    },
+
+    subscriptionOutputFile: function (section) {
+        return section.output_file || this.safeConfigName(section.name || section['.name']) || (section['.name'] + '.json');
+    },
+
+    asArray: function (value) {
+        if (value == null) {
+            return [];
+        }
+        return Array.isArray(value) ? value : [value];
+    },
+
+    uniqueItems: function (items) {
+        const seen = {};
+        const result = [];
+        for (const item of items || []) {
+            const value = String(item || '').trim();
+            if (!value || seen[value]) {
+                continue;
+            }
+            seen[value] = true;
+            result.push(value);
+        }
+        return result;
+    },
+
+    linesToArray: function (value) {
+        return String(value || '')
+            .split('\n')
+            .map(function (line) { return line.trim(); })
+            .filter(function (line) { return line.length > 0; });
+    },
+
+    parseProfile: function (content) {
+        const profile = JSON.parse(content || '{}');
+        if (!profile.route || typeof profile.route !== 'object' || Array.isArray(profile.route)) {
+            profile.route = {};
+        }
+        if (!Array.isArray(profile.route.rules)) {
+            profile.route.rules = [];
+        }
+        if (!Array.isArray(profile.outbounds)) {
+            profile.outbounds = [];
+        }
+        return profile;
+    },
+
+    makeOptionSelect: function (values, selected, placeholder) {
+        const options = values.map(function (value) {
+            return E('option', { value: value, selected: value === selected ? 'selected' : null }, value);
+        });
+        if (placeholder) {
+            options.unshift(E('option', { value: '' }, placeholder));
+        }
+        const select = E('select', {}, options);
+        if (selected && !values.includes(selected)) {
+            select.insertBefore(E('option', { value: selected, selected: 'selected' }, selected), select.firstChild);
+        }
+        return select;
+    },
+
     getPaths: async function () {
         return callMomoGetPaths();
     },
 
     status: async function () {
         return !!(await callMomoStatus())?.running;
-    },
-
-    reload: function () {
-        return this.action(callRCInit('momo', 'reload'), {
-            success: _('服务已重新加载'),
-            failure: _('服务重新加载失败')
-        });
     },
 
     restart: function () {

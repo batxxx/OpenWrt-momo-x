@@ -4,7 +4,7 @@
         "read": {
             "uci": [ "momo" ],
             "ubus": {
-                "rc": [ "*" ],
+                "rc": [ "init" ],
                 "luci.momo": [ "*" ]
             },
             "file": {

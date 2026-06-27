@@ -21,13 +21,6 @@ function formatFeature(value) {
     return value ? _('可用') : _('不可用');
 }
 
-function stopButtonEvent(ev) {
-    if (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-    }
-}
-
 function installStyle() {
     if (document.getElementById('momo-app-style')) {
         return;
@@ -188,7 +181,7 @@ return view.extend({
         o.inputstyle = 'negative';
         o.inputtitle = _('重启服务');
         o.onclick = function (ev) {
-            stopButtonEvent(ev);
+            momo.stopButtonEvent(ev);
             return momo.restart();
         };
 
@@ -196,14 +189,14 @@ return view.extend({
         o.inputstyle = 'positive';
         o.inputtitle = _('更新 Web 面板');
         o.onclick = function (ev) {
-            stopButtonEvent(ev);
+            momo.stopButtonEvent(ev);
             return momo.updateDashboard();
         };
 
         o = s.option(form.Button, 'open_dashboard');
         o.inputtitle = _('打开 Web 面板');
         o.onclick = function (ev) {
-            stopButtonEvent(ev);
+            momo.stopButtonEvent(ev);
             return momo.openDashboard();
         };
 

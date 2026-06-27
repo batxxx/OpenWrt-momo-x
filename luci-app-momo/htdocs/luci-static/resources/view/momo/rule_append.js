@@ -150,54 +150,6 @@ function installStyle() {
 `));
 }
 
-function safeConfigName(name) {
-    name = String(name || '').trim()
-        .replace(/[\/\\:*?"<>|]/g, '_')
-        .replace(/\s+/g, '_')
-        .replace(/[^A-Za-z0-9._-]/g, '_')
-        .replace(/^_+|_+$/g, '');
-
-    if (!name) {
-        return '';
-    }
-    if (!/\.(json|yaml|yml)$/i.test(name)) {
-        name += '.json';
-    }
-    return name;
-}
-
-function subscriptionOutputFile(section) {
-    return section.output_file || safeConfigName(section.name || section['.name']) || (section['.name'] + '.json');
-}
-
-function asArray(value) {
-    if (value == null) {
-        return [];
-    }
-    return Array.isArray(value) ? value : [value];
-}
-
-function uniqueItems(items) {
-    const seen = {};
-    const result = [];
-    for (const item of items) {
-        const value = String(item || '').trim();
-        if (!value || seen[value]) {
-            continue;
-        }
-        seen[value] = true;
-        result.push(value);
-    }
-    return result;
-}
-
-function linesToArray(value) {
-    return String(value || '')
-        .split('\n')
-        .map(function (line) { return line.trim(); })
-        .filter(function (line) { return line.length > 0; });
-}
-
 function parseRuleArray(value) {
     if (!value) {
         return [];
@@ -210,28 +162,14 @@ function parseRuleArray(value) {
     }
 }
 
-function parseProfile(content) {
-    const profile = JSON.parse(content || '{}');
-    if (!profile.route || typeof profile.route !== 'object' || Array.isArray(profile.route)) {
-        profile.route = {};
-    }
-    if (!Array.isArray(profile.route.rules)) {
-        profile.route.rules = [];
-    }
-    if (!Array.isArray(profile.outbounds)) {
-        profile.outbounds = [];
-    }
-    return profile;
-}
-
 function profileOutbounds(profile) {
-    return uniqueItems([MANAGED_SELECTOR_TAG, MANAGED_URLTEST_TAG, 'DIRECT', 'REJECT'].concat((profile.outbounds || []).map(function (outbound) {
+    return momo.uniqueItems([MANAGED_SELECTOR_TAG, MANAGED_URLTEST_TAG, 'DIRECT', 'REJECT'].concat((profile.outbounds || []).map(function (outbound) {
         return outbound && outbound.tag;
     })));
 }
 
 function profileProxyNodes(profile) {
-    return uniqueItems((profile.outbounds || []).filter(function (outbound) {
+    return momo.uniqueItems((profile.outbounds || []).filter(function (outbound) {
         const tag = String(outbound && outbound.tag || '').trim();
         const type = String(outbound && outbound.type || '').trim();
         return tag && tag !== MANAGED_SELECTOR_TAG && tag !== MANAGED_URLTEST_TAG &&
@@ -278,7 +216,7 @@ function ensureManagedOutbounds(profile) {
     upsertOutbound(profile, {
         type: 'selector',
         tag: MANAGED_SELECTOR_TAG,
-        outbounds: uniqueItems((nodes.length ? [MANAGED_URLTEST_TAG] : []).concat(['DIRECT'], nodes))
+        outbounds: momo.uniqueItems((nodes.length ? [MANAGED_URLTEST_TAG] : []).concat(['DIRECT'], nodes))
     });
 
     return profile;
@@ -305,7 +243,7 @@ function normalizeManagedOutbound(outbound) {
 }
 
 function setRuleField(rule, field, value) {
-    const items = linesToArray(value);
+    const items = momo.linesToArray(value);
     if (items.length) {
         rule[field] = items;
     } else {
@@ -326,7 +264,7 @@ function cleanRule(rule) {
             continue;
         }
         if (RULE_FIELDS.some(function ([field]) { return field === key; })) {
-            const values = uniqueItems(asArray(rule[key]));
+            const values = momo.uniqueItems(momo.asArray(rule[key]));
             if (values.length) {
                 result[key] = values;
             }
@@ -338,7 +276,7 @@ function cleanRule(rule) {
 function ruleSummary(rule) {
     const parts = [];
     for (const [key, label] of RULE_FIELDS) {
-        const count = asArray(rule[key]).length;
+        const count = momo.asArray(rule[key]).length;
         if (count) {
             parts.push(label + ' ' + count);
         }
@@ -349,7 +287,7 @@ function ruleSummary(rule) {
 function fieldPreview(rule) {
     const chips = [];
     for (const [key, label] of RULE_FIELDS) {
-        const values = asArray(rule[key]);
+        const values = momo.asArray(rule[key]);
         if (!values.length) {
             continue;
         }
@@ -359,16 +297,6 @@ function fieldPreview(rule) {
         chips.push(E('span', { class: 'momo-chip momo-chip-muted' }, '待添加匹配条件'));
     }
     return chips;
-}
-
-function makeOptionSelect(values, selected, placeholder) {
-    const select = E('select', {}, [E('option', { value: '' }, placeholder || '-- 请选择 --')].concat(values.map(function (value) {
-        return E('option', { value: value, selected: value === selected ? 'selected' : null }, value);
-    })));
-    if (selected && !values.includes(selected)) {
-        select.insertBefore(E('option', { value: selected, selected: 'selected' }, selected), select.firstChild);
-    }
-    return select;
 }
 
 function buildRuleGroups(rules) {
@@ -382,7 +310,7 @@ function buildRuleGroups(rules) {
         }
         map[outbound].count++;
         for (const [field] of RULE_FIELDS) {
-            const values = uniqueItems(asArray(map[outbound].rule[field]).concat(asArray(rule[field])));
+            const values = momo.uniqueItems(momo.asArray(map[outbound].rule[field]).concat(momo.asArray(rule[field])));
             if (values.length) {
                 map[outbound].rule[field] = values;
             }
@@ -410,7 +338,7 @@ function ruleKey(rule) {
     }
 
     for (const [field] of RULE_FIELDS) {
-        const values = uniqueItems(asArray(rule && rule[field]));
+        const values = momo.uniqueItems(momo.asArray(rule && rule[field]));
         if (values.length) {
             normalized[field] = values;
         }
@@ -486,7 +414,7 @@ function renderAppendCard(group, index, expanded, pending, onToggle, onDelete, r
     const addFieldSelect = E('select', {}, [
         E('option', { value: '' }, '添加输入栏')
     ].concat(RULE_FIELDS.filter(function ([key]) {
-        return asArray(rule[key]).length === 0 && !pending[key];
+        return momo.asArray(rule[key]).length === 0 && !pending[key];
     }).map(function ([key, label]) {
         return E('option', { value: key }, label);
     })));
@@ -499,9 +427,9 @@ function renderAppendCard(group, index, expanded, pending, onToggle, onDelete, r
     });
 
     const fields = RULE_FIELDS.filter(function ([key]) {
-        return asArray(rule[key]).length > 0 || pending[key];
+        return momo.asArray(rule[key]).length > 0 || pending[key];
     }).map(function ([key, label]) {
-        const textarea = E('textarea', {}, asArray(rule[key]).join('\n'));
+        const textarea = E('textarea', {}, momo.asArray(rule[key]).join('\n'));
         textarea.addEventListener('input', function () {
             setRuleField(rule, key, textarea.value);
         });
@@ -588,7 +516,7 @@ return view.extend({
             choices.push({ path: paths.profiles_dir + '/' + profile.name, label: '本地配置：' + profile.name, value: 'file:' + profile.name });
         }
         for (const subscription of subscriptions) {
-            const file = subscriptionOutputFile(subscription);
+            const file = momo.subscriptionOutputFile(subscription);
             const exists = subscriptionFiles.some(function (entry) { return entry.name === file; });
             choices.push({ path: paths.subscriptions_dir + '/' + file, label: '订阅配置：' + (subscription.name || file) + (exists ? '' : '（未生成）'), value: 'subscription:' + subscription['.name'] });
         }
@@ -606,7 +534,7 @@ return view.extend({
             selectedPath = path;
             statsNode.textContent = '正在读取出站/节点组...';
             return L.resolveDefault(fs.read_direct(path), '').then(function (content) {
-                const profile = parseProfile(content);
+                const profile = momo.parseProfile(content);
                 outbounds = profileOutbounds(profile);
                 statsNode.textContent = '当前配置可读取出站/节点组 ' + outbounds.length + ' 个。默认“所有节点”会自动包含全部代理节点、直连和 urltest。';
                 renderRules();
@@ -644,7 +572,7 @@ return view.extend({
             return saveRules().then(function () {
                 return L.resolveDefault(fs.read_direct(selectedPath), '');
             }).then(function (content) {
-                const originalProfile = ensureManagedOutbounds(parseProfile(content));
+                const originalProfile = ensureManagedOutbounds(momo.parseProfile(content));
                 const missing = missingRuleOutbounds(originalProfile, prepend.concat(append));
                 if (missing.length) {
                     momo.notify('立即应用失败，未写入配置：出站/节点组不存在：' + missing.join(', '), 'danger');

@@ -82,24 +82,6 @@ function readTextFile(file) {
     });
 }
 
-function safeConfigName(name) {
-    name = String(name || '').trim()
-        .replace(/[\/\\:*?"<>|]/g, '_')
-        .replace(/\s+/g, '_')
-        .replace(/[^A-Za-z0-9._-]/g, '_')
-        .replace(/^_+|_+$/g, '');
-
-    if (!name) {
-        return '';
-    }
-
-    if (!/\.(json|yaml|yml)$/i.test(name)) {
-        name += '.json';
-    }
-
-    return name;
-}
-
 function renderUploadPanel(paths, refreshProfileList) {
     let input;
 
@@ -115,7 +97,7 @@ function renderUploadPanel(paths, refreshProfileList) {
             return Promise.resolve();
         }
 
-        const name = safeConfigName(file.name);
+        const name = momo.safeConfigName(file.name);
         if (!name) {
             momo.notify('配置文件名无效', 'danger');
             return Promise.resolve();
@@ -152,14 +134,6 @@ function renderUploadPanel(paths, refreshProfileList) {
     ]);
 }
 
-function subscriptionOutputFile(section) {
-    const explicit = section.output_file || '';
-    if (explicit) {
-        return explicit;
-    }
-    return safeConfigName(section.name || section['.name']) || (section['.name'] + '.json');
-}
-
 function renderStatus(active) {
     return E('strong', {
         'style': 'color:' + (active ? 'var(--success-color,#2e7d32)' : 'inherit')
@@ -187,7 +161,7 @@ function buildRows(paths, profiles, subscriptionFiles, subscriptions) {
     }
 
     for (const section of subscriptions) {
-        const fileName = subscriptionOutputFile(section);
+        const fileName = momo.subscriptionOutputFile(section);
         const file = subscriptionFiles.find(function (entry) {
             return entry.name === fileName;
         });
@@ -262,7 +236,7 @@ function subscriptionInfo(subscriptions, section_id) {
 function renderProfileTable(paths, rows, currentProfile, refreshProfileList) {
     const createProfile = function () {
         const input = window.prompt('请输入配置文件名，例如 home.json 或 home.yaml');
-        const name = safeConfigName(input);
+        const name = momo.safeConfigName(input);
         if (!name) {
             return;
         }

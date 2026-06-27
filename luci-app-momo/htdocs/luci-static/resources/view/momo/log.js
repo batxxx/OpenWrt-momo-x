@@ -17,13 +17,6 @@ function appendLog(element, current, update) {
     return { text: next, len: update.len };
 }
 
-function stopButtonEvent(ev) {
-    if (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-    }
-}
-
 function addScheduleOptions(section) {
     let o;
 
@@ -125,7 +118,7 @@ return view.extend({
         o.inputstyle = 'negative';
         o.inputtitle = _('Clear Log');
         o.onclick = function (ev, section_id) {
-            stopButtonEvent(ev);
+            momo.stopButtonEvent(ev);
             m.lookupOption('_app_log', section_id)[0].getUIElement(section_id).setValue('');
             return momo.clearAppLog();
         };
@@ -149,7 +142,7 @@ return view.extend({
         o = s.taboption('app_log', form.Button, 'scroll_app_log_to_bottom');
         o.inputtitle = _('Scroll To Bottom');
         o.onclick = function (ev, section_id) {
-            stopButtonEvent(ev);
+            momo.stopButtonEvent(ev);
             const element = m.lookupOption('_app_log', section_id)[0].getUIElement(section_id).node.firstChild;
             element.scrollTop = element.scrollHeight;
         };
@@ -160,7 +153,7 @@ return view.extend({
         o.inputstyle = 'negative';
         o.inputtitle = _('Clear Log');
         o.onclick = function (ev, section_id) {
-            stopButtonEvent(ev);
+            momo.stopButtonEvent(ev);
             m.lookupOption('_core_log', section_id)[0].getUIElement(section_id).setValue('');
             return momo.clearCoreLog();
         };
@@ -184,7 +177,7 @@ return view.extend({
         o = s.taboption('core_log', form.Button, 'scroll_core_log_to_bottom');
         o.inputtitle = _('Scroll To Bottom');
         o.onclick = function (ev, section_id) {
-            stopButtonEvent(ev);
+            momo.stopButtonEvent(ev);
             const element = m.lookupOption('_core_log', section_id)[0].getUIElement(section_id).node.firstChild;
             element.scrollTop = element.scrollHeight;
         };
@@ -195,7 +188,7 @@ return view.extend({
         o.inputstyle = 'negative';
         o.inputtitle = _('Generate & Download');
         o.onclick = function (ev) {
-            stopButtonEvent(ev);
+            momo.stopButtonEvent(ev);
             return momo.debug().then(function () {
                 fs.read_direct(paths.debug_log_path, 'blob').then(function (data) {
                     // create url

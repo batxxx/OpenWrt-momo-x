@@ -4,19 +4,12 @@
 'require uci';
 'require tools.momo as momo';
 
-function stopButtonEvent(ev) {
-    if (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-    }
-}
-
 function actionButton(title, style, onclick) {
     return E('button', {
         type: 'button',
         class: 'btn cbi-button cbi-button-' + (style || 'button'),
         click: function (ev) {
-            stopButtonEvent(ev);
+            momo.stopButtonEvent(ev);
             return onclick(ev);
         }
     }, title);
@@ -292,7 +285,7 @@ return view.extend({
         o.inputtitle = '更新';
         o.modalonly = false;
         o.onclick = function (ev, section_id) {
-            stopButtonEvent(ev);
+            momo.stopButtonEvent(ev);
             return momo.updateSubscription(section_id).then(function () {
                 return refreshSubscriptionRow(rootNode, section_id);
             });
@@ -303,7 +296,7 @@ return view.extend({
         o.inputtitle = '查看配置';
         o.modalonly = false;
         o.onclick = function (ev, section_id) {
-            stopButtonEvent(ev);
+            momo.stopButtonEvent(ev);
             const section = uci.sections('momo', 'subscription').find(function (item) {
                 return item['.name'] === section_id;
             }) || {};
