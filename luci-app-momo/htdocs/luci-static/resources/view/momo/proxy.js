@@ -183,6 +183,27 @@ return view.extend({
         o = s.taboption('bypass', form.Flag, 'bypass_china_mainland_ip6', _('绕过中国大陆 IPv6'));
         o.rmempty = false;
 
+        o = s.taboption('bypass', form.Flag, 'bypass_china_mainland_domain', _('绕过中国大陆域名'));
+        o.rmempty = false;
+
+        o = s.taboption('bypass', form.Flag, 'bypass_geo_auto_update', _('自动更新大陆绕过规则'));
+        o.rmempty = false;
+
+        o = s.taboption('bypass', form.ListValue, 'bypass_geo_update_interval', _('更新频率'));
+        o.value('daily', _('每天'));
+        o.value('weekly', _('每周'));
+        o.value('monthly', _('每月'));
+        o.default = 'weekly';
+        o.depends('bypass_geo_auto_update', '1');
+
+        o = s.taboption('bypass', form.Button, '_update_geo_rules', _('更新大陆绕过规则'));
+        o.inputtitle = _('立即更新');
+        o.inputstyle = 'apply';
+        o.onclick = function (ev) {
+            momo.stopButtonEvent(ev);
+            return momo.updateGeoRules();
+        };
+
         o = s.taboption('bypass', form.DynamicList, 'bypass_domain', _('自定义直连域名'));
         o.placeholder = 'example.com';
 

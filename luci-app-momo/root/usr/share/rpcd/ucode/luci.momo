@@ -262,6 +262,11 @@ const methods = {
 			return { success: success, results: results };
 		}
 	},
+	update_geo_rules: {
+		call: function() {
+			return { success: system(['service', 'momo', 'update_geo_rules']) == 0 };
+		}
+	},
 	check_profile_path: {
 		args: { path: 'path' },
 		call: function(req) {

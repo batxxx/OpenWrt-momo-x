@@ -33,6 +33,10 @@ FIREWALL_DIR="$HOME_DIR/firewall"
 GEOIP_CN_NFT="$FIREWALL_DIR/geoip_cn.nft"
 GEOIP6_CN_NFT="$FIREWALL_DIR/geoip6_cn.nft"
 
+## rules
+RULES_DIR="$HOME_DIR/rules"
+GEOSITE_CN_TXT="$RULES_DIR/geosite_cn.txt"
+
 ## log
 LOG_DIR="/var/log/momo"
 APP_LOG_PATH="$LOG_DIR/app.log"
@@ -73,6 +77,9 @@ get_paths() {
 	json_add_string firewall_dir "$FIREWALL_DIR"
 	json_add_string geoip_cn_nft "$GEOIP_CN_NFT"
 	json_add_string geoip6_cn_nft "$GEOIP6_CN_NFT"
+
+	json_add_string rules_dir "$RULES_DIR"
+	json_add_string geosite_cn_txt "$GEOSITE_CN_TXT"
 
 	json_add_string log_dir "$LOG_DIR"
 	json_add_string app_log_path "$APP_LOG_PATH"

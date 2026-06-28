@@ -10,6 +10,7 @@ PROG="/usr/bin/sing-box"
 
 extra_command 'update_subscription' 'Update subscription by section id'
 extra_command 'update_subscriptions' 'Update all enabled subscriptions'
+extra_command 'update_geo_rules' 'Update China IP/domain bypass rules'
 extra_command 'clear_logs' 'Clear logs if size exceeds the limit'
 
 boot_func() {
@@ -241,6 +242,17 @@ build_log_clear_cron() {
 	echo "$minute $hour * * $weekday"
 }
 
+build_geo_update_cron() {
+	local interval
+	config_get interval "proxy" "bypass_geo_update_interval" "weekly"
+	case "$interval" in
+		daily) echo "20 4 * * *" ;;
+		weekly) echo "20 4 * * 1" ;;
+		monthly) echo "20 4 1 * *" ;;
+		*) echo "20 4 * * 1" ;;
+	esac
+}
+
 start_service() {
 	# prepare files
 	prepare_files
@@ -257,6 +269,15 @@ start_service() {
 	if [ "$subscription_scheduled_update" = 1 ] && [ -n "$subscription_scheduled_update_cron" ]; then
 		log "App" "Set subscription scheduled update."
 		echo "$subscription_scheduled_update_cron /etc/init.d/momo update_subscriptions #momo subscription scheduled update" >> "/etc/crontabs/root"
+		/etc/init.d/cron restart
+	fi
+	local bypass_geo_auto_update bypass_geo_update_cron
+	config_get_bool bypass_geo_auto_update "proxy" "bypass_geo_auto_update" 0
+	bypass_geo_update_cron="$(build_geo_update_cron)"
+	sed -i "/#momo geo rules update/d" "/etc/crontabs/root" > /dev/null 2>&1
+	if [ "$bypass_geo_auto_update" = 1 ] && [ -n "$bypass_geo_update_cron" ]; then
+		log "App" "Set China bypass rules scheduled update."
+		echo "$bypass_geo_update_cron /etc/init.d/momo update_geo_rules #momo geo rules update" >> "/etc/crontabs/root"
 		/etc/init.d/cron restart
 	fi
 	# check if enabled
@@ -1196,4 +1217,8 @@ update_subscriptions() {
 	config_load momo
 	config_foreach update_subscription_collect subscription
 	return "$failed"
+}
+
+update_geo_rules() {
+	"$SH_DIR/update_geo_rules.sh"
 }

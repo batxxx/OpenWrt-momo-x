@@ -2,7 +2,7 @@
 
 'use strict';
 
-import { readfile, writefile } from 'fs';
+import { access, readfile, writefile } from 'fs';
 import { cursor } from 'uci';
 
 const uci = cursor();
@@ -397,11 +397,21 @@ function clean_domain(value) {
 function direct_domains() {
 	let domains = [];
 	let seen = {};
+	const geosite_cn = '/etc/momo/rules/geosite_cn.txt';
 	for (let value in uci.get('momo', 'proxy', 'bypass_domain') || []) {
 		const domain = clean_domain(value);
 		if (domain != null && !seen[domain]) {
 			push(domains, domain);
 			seen[domain] = true;
+		}
+	}
+	if (uci.get('momo', 'proxy', 'bypass_china_mainland_domain') == '1' && access(geosite_cn)) {
+		for (let value in split(readfile(geosite_cn), '\n')) {
+			const domain = clean_domain(value);
+			if (domain != null && !seen[domain]) {
+				push(domains, domain);
+				seen[domain] = true;
+			}
 		}
 	}
 	return domains;

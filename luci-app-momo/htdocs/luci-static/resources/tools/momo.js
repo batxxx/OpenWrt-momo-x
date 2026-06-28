@@ -81,6 +81,12 @@ const callMomoUpdateSubscriptions = rpc.declare({
     expect: { '': {} }
 });
 
+const callMomoUpdateGeoRules = rpc.declare({
+    object: 'luci.momo',
+    method: 'update_geo_rules',
+    expect: { '': {} }
+});
+
 const callMomoSetProfile = rpc.declare({
     object: 'luci.momo',
     method: 'set_profile',
@@ -334,6 +340,13 @@ return baseclass.extend({
             this.notify(_('全部订阅更新失败：') + String(error), 'danger');
             throw error;
         }, this));
+    },
+
+    updateGeoRules: function () {
+        return this.action(callMomoUpdateGeoRules(), {
+            success: _('大陆绕过规则已更新'),
+            failure: _('大陆绕过规则更新失败')
+        });
     },
 
     setProfile: function (profile) {

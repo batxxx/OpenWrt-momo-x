@@ -75,6 +75,11 @@ mixin_dns_fakeip=$(uci -q get momo.mixin.dns_fakeip); [ -z "$mixin_dns_fakeip" ]
 # since v1.2.1
 config_clear_at_stop=$(uci -q get momo.log.clear_at_stop); [ -z "$config_clear_at_stop" ] && uci set momo.log.clear_at_stop=1
 
+# since v1.2.4
+proxy_bypass_china_mainland_domain=$(uci -q get momo.proxy.bypass_china_mainland_domain); [ -z "$proxy_bypass_china_mainland_domain" ] && uci set momo.proxy.bypass_china_mainland_domain=0
+proxy_bypass_geo_auto_update=$(uci -q get momo.proxy.bypass_geo_auto_update); [ -z "$proxy_bypass_geo_auto_update" ] && uci set momo.proxy.bypass_geo_auto_update=0
+proxy_bypass_geo_update_interval=$(uci -q get momo.proxy.bypass_geo_update_interval); [ -z "$proxy_bypass_geo_update_interval" ] && uci set momo.proxy.bypass_geo_update_interval=weekly
+
 # commit
 uci commit momo
 
