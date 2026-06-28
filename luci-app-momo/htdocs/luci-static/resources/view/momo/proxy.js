@@ -230,6 +230,20 @@ return view.extend({
         o = s.taboption('bypass', form.DynamicList, 'bypass_domain', _('自定义直连域名'));
         o.placeholder = 'example.com';
 
+        o = s.taboption('bypass', form.DynamicList, 'force_proxy_domain', _('强制代理域名（绕过例外）'));
+        o.description = _('这里的域名不受“绕过中国大陆域名”影响，强制走代理，优先级高于 geosite-cn 和自定义直连。');
+        o.placeholder = 'example.com';
+
+        o = s.taboption('bypass', form.DynamicList, 'force_proxy_ip', _('强制代理 IPv4（绕过例外）'));
+        o.description = _('这里的 IP 不受“绕过中国大陆 IPv4”影响，强制走代理。');
+        o.datatype = 'cidr4';
+        o.placeholder = '1.2.3.0/24';
+
+        o = s.taboption('bypass', form.DynamicList, 'force_proxy_ip6', _('强制代理 IPv6（绕过例外）'));
+        o.description = _('这里的 IP 不受“绕过中国大陆 IPv6”影响，强制走代理。');
+        o.datatype = 'cidr6';
+        o.placeholder = '2001:db8::/32';
+
         o = s.taboption('bypass', form.Value, 'proxy_tcp_dport', _('需要代理的 TCP 目标端口'));
         o.rmempty = false;
         o.value('0-65535', _('所有端口'));

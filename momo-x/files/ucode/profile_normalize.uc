@@ -394,10 +394,10 @@ function clean_domain(value) {
 	return null;
 }
 
-function direct_domains() {
+function uci_domain_list(option_name) {
 	let domains = [];
 	let seen = {};
-	for (let value in uci.get('momo', 'proxy', 'bypass_domain') || []) {
+	for (let value in uci.get('momo', 'proxy', option_name) || []) {
 		const domain = clean_domain(value);
 		if (domain != null && !seen[domain]) {
 			push(domains, domain);
@@ -405,6 +405,31 @@ function direct_domains() {
 		}
 	}
 	return domains;
+}
+
+function string_array_equal(a, b) {
+	if (type(a) != 'array' || type(b) != 'array' || length(a) != length(b)) {
+		return false;
+	}
+	for (let i = 0; i < length(a); i++) {
+		if (a[i] != b[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// matches a rule we generated ourselves ({ domain_suffix: [...], outbound })
+// so re-normalizing a profile can't pile up duplicate copies of it.
+function is_generated_domain_rule(rule, domains, outbound) {
+	if (length(domains) == 0 || rule?.outbound != outbound || type(rule?.domain_suffix) != 'array') {
+		return false;
+	}
+	let keys = 0;
+	for (let k in rule) {
+		keys++;
+	}
+	return keys == 2 && string_array_equal(rule.domain_suffix, domains);
 }
 
 function ensure_route(profile, node_tags) {
@@ -417,14 +442,24 @@ function ensure_route(profile, node_tags) {
 		profile.route.rules = [];
 	}
 
+	const bypass_domain = uci_domain_list('bypass_domain');
+	// force-proxy exceptions: domains here must reach a node group, so only when one exists
+	const force_proxy = (length(node_tags) > 0) ? uci_domain_list('force_proxy_domain') : [];
+
 	let has_dns_hijack = false;
 	let rules = [];
 	for (let rule in profile.route.rules) {
 		if (!normalize_route_rule(rule)) {
 			continue;
 		}
-		// drop any previously generated china-domain rule (idempotent, dedup by rule_set tag)
+		// drop our own previously generated rules so re-normalization stays idempotent
 		if (rule?.rule_set == 'geosite-cn') {
+			continue;
+		}
+		if (is_generated_domain_rule(rule, bypass_domain, 'direct')) {
+			continue;
+		}
+		if (is_generated_domain_rule(rule, force_proxy, 'proxy')) {
 			continue;
 		}
 		if (rule?.inbound == dns_inbound_tag && rule?.action == 'hijack-dns') {
@@ -433,7 +468,6 @@ function ensure_route(profile, node_tags) {
 		push(rules, rule);
 	}
 	profile.route.rules = rules;
-	const bypass_domain = direct_domains();
 	if (length(bypass_domain) > 0) {
 		unshift(profile.route.rules, {
 			domain_suffix: bypass_domain,
@@ -473,6 +507,14 @@ function ensure_route(profile, node_tags) {
 		unshift(profile.route.rules, {
 			rule_set: geosite_tag,
 			outbound: 'direct'
+		});
+	}
+	// force-proxy exceptions go in LAST so they sit ahead of geosite-cn and the
+	// custom direct list: these domains are immune to the China bypass.
+	if (length(force_proxy) > 0) {
+		unshift(profile.route.rules, {
+			domain_suffix: force_proxy,
+			outbound: 'proxy'
 		});
 	}
 	if (!has_dns_hijack) {
