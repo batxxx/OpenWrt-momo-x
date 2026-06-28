@@ -86,6 +86,13 @@ proxy_geoip_v6_url=$(uci -q get momo.proxy.geoip_v6_url); [ -z "$proxy_geoip_v6_
 proxy_geosite_cn_url=$(uci -q get momo.proxy.geosite_cn_url); [ -z "$proxy_geosite_cn_url" ] && uci set momo.proxy.geosite_cn_url="https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs"
 proxy_geosite_update_interval=$(uci -q get momo.proxy.geosite_update_interval); [ -z "$proxy_geosite_update_interval" ] && uci set momo.proxy.geosite_update_interval="168h"
 
+# since v1.2.6
+proxy_router_dns_domain=$(uci -q get momo.proxy.router_dns_domain); [ -z "$proxy_router_dns_domain" ] && {
+	uci add_list momo.proxy.router_dns_domain="github.io"
+	uci add_list momo.proxy.router_dns_domain="githubusercontent.com"
+	uci add_list momo.proxy.router_dns_domain="codeload.github.com"
+}
+
 # commit
 uci commit momo
 

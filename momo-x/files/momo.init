@@ -124,6 +124,72 @@ restore_dnsmasq_forward() {
 	/etc/init.d/dnsmasq restart >/dev/null 2>&1
 }
 
+# Send ONLY the configured domains' DNS to sing-box (fake-ip) so the router
+# itself can reach them through the proxy (e.g. opkg pulling the GitHub feed).
+# Unlike a blanket forward this leaves every other router-local/excluded service
+# resolving normally, so they don't get dead fake-ip answers. Idempotent.
+setup_router_dns_forward() {
+	local dns_port router_proxy dns_fakeip changed entry prefix desired present d
+	dns_port="$1"
+	[ -n "$dns_port" ] || return 0
+	[ -x /etc/init.d/dnsmasq ] || return 0
+	uci -q show dhcp.@dnsmasq[0] >/dev/null || return 0
+
+	prefix=""
+	desired=""
+	config_get_bool router_proxy "proxy" "router_proxy" 0
+	config_get_bool dns_fakeip "mixin" "dns_fakeip" 0
+	if [ "$router_proxy" = 1 ] && [ "$dns_fakeip" = 1 ]; then
+		for d in $(uci -q get momo.proxy.router_dns_domain 2>/dev/null); do
+			prefix="$prefix/$d"
+		done
+		[ -n "$prefix" ] && desired="$prefix/127.0.0.1#$dns_port"
+	fi
+
+	changed=0
+	present=0
+	for entry in $(uci -q get dhcp.@dnsmasq[0].server 2>/dev/null); do
+		case "$entry" in
+			/*/127.0.0.1#*)
+				if [ "$entry" = "$desired" ]; then
+					present=1
+				else
+					uci -q del_list dhcp.@dnsmasq[0].server="$entry"
+					changed=1
+				fi
+			;;
+		esac
+	done
+	if [ -n "$desired" ] && [ "$present" = 0 ]; then
+		uci add_list dhcp.@dnsmasq[0].server="$desired"
+		changed=1
+	fi
+	if [ "$changed" = 1 ]; then
+		uci commit dhcp
+		/etc/init.d/dnsmasq restart >/dev/null 2>&1
+		[ -n "$desired" ] && log "DNS" "Route router-self DNS for$prefix via sing-box."
+	fi
+}
+
+restore_router_dns_forward() {
+	local entry changed
+	[ -x /etc/init.d/dnsmasq ] || return 0
+	uci -q show dhcp.@dnsmasq[0] >/dev/null || return 0
+	changed=0
+	for entry in $(uci -q get dhcp.@dnsmasq[0].server 2>/dev/null); do
+		case "$entry" in
+			/*/127.0.0.1#*)
+				uci -q del_list dhcp.@dnsmasq[0].server="$entry"
+				changed=1
+			;;
+		esac
+	done
+	if [ "$changed" = 1 ]; then
+		uci commit dhcp
+		/etc/init.d/dnsmasq restart >/dev/null 2>&1
+	fi
+}
+
 safe_profile_filename() {
 	local name fallback safe
 	name="$1"
@@ -656,6 +722,7 @@ service_started() {
 		if [ "$ipv4_dns_hijack" = 1 ] || [ "$ipv6_dns_hijack" = 1 ]; then
 			setup_dnsmasq_forward "$dns_port"
 		fi
+		setup_router_dns_forward "$dns_port"
 		# check hijack
 		if nft list tables | grep -q momo; then
 			log "Proxy" "Hijack successful."
@@ -683,6 +750,7 @@ cleanup() {
 	# load config
 	config_load momo
 	restore_dnsmasq_forward
+	restore_router_dns_forward
 	# get config
 	## log config
 	local log_clear_at_stop

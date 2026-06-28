@@ -73,6 +73,11 @@ return view.extend({
         o = s.taboption('router', form.Flag, 'router_proxy', _('启用'));
         o.rmempty = false;
 
+        o = s.taboption('router', form.DynamicList, 'router_dns_domain', _('路由器自身代理域名（DNS 走 sing-box）'));
+        o.depends('router_proxy', '1');
+        o.placeholder = 'github.io';
+        o.description = _('这些域名路由器自己会通过 sing-box 解析（fake-ip）并走代理，使路由器本身也能访问（如 opkg 拉取 GitHub 源）。其余域名仍走正常解析，不影响 ntp 等本地服务。仅在启用 Fake-IP DNS 时生效。');
+
         o = s.taboption('router', form.SectionValue, '_router_access_control', form.TableSection, 'router_access_control', _('访问控制'));
         o.retain = true;
         o.depends('router_proxy', '1');

@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=momo-x
 PKG_VERSION:=2026.06.03
-PKG_RELEASE:=19
+PKG_RELEASE:=20
 
 PKG_LICENSE:=GPL-3.0+
 PKG_MAINTAINER:=Joseph Mory <morytyann@gmail.com>
