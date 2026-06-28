@@ -40,6 +40,34 @@ Recommended packages:
 
 ## Installation
 
+### Option 0: One-command install from the self-hosted Forgejo (LAN, recommended)
+
+This repository is mirrored on a self-hosted Forgejo instance, and the prebuilt
+`.ipk` packages are attached to that instance's Release. As long as the router can
+reach this Forgejo (same LAN / tailnet), a single command installs the latest build:
+
+```sh
+wget -O - http://10.168.10.119/forgejo-admin/momo/raw/branch/main/local-install.sh | sh
+```
+
+What the script does: queries the repo's `releases/latest` API, downloads every `.ipk`
+of that release into `/tmp`, runs `opkg update`, removes any legacy `momo*` packages,
+then `opkg install ./*.ipk`. **Unlike the GitHub Pages feed, this needs no signing key
+and writes no opkg feed** — it installs the locally downloaded packages directly.
+
+Notes:
+
+- The `.ipk` files are hosted on Forgejo, but external dependencies (`sing-box`, the
+  `kmod-*` modules, `curl`, etc.) are still resolved from the router's official OpenWrt
+  feeds — exactly as with the GitHub install, so the router must be able to reach them.
+- To publish a new version, mirror the `.ipk` from the new GitHub Release into the
+  matching Forgejo Release; the script targets `latest`, so it needs no changes.
+- Override host/repo if different:
+  `MOMO_FORGE_HOST=http://your-host MOMO_FORGE_REPO=owner/repo sh local-install.sh`
+
+> Options 1–4 below are the upstream GitHub-based methods and require the router to
+> reach GitHub / GitHub Pages.
+
 ### Published Packages
 
 This fork publishes installable packages in two places:

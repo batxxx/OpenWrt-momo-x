@@ -40,6 +40,29 @@ Momo-X 是一个在 OpenWrt 上运行 sing-box 透明代理的 LuCI 应用和服
 
 ## 安装
 
+### 方式零：从自建 Forgejo 一键安装（局域网推荐）
+
+本仓库在自建的 Forgejo 上做了镜像，预编译好的 `.ipk` 包直接挂在该实例的 Release 里。
+路由器只要能访问这台 Forgejo（同一局域网 / tailnet），一条命令即可装上最新版：
+
+```sh
+wget -O - http://10.168.10.119/forgejo-admin/momo/raw/branch/main/local-install.sh | sh
+```
+
+脚本做的事：查询 Forgejo 该仓库 `releases/latest` 接口，下载该版本全部 `.ipk` 到 `/tmp`，
+执行 `opkg update`，清理旧版 `momo*` 包，最后 `opkg install ./*.ipk` 一次性装上。
+**与 GitHub Pages 软件源不同，这种方式不需要签名密钥、也不写 opkg 软件源**——直接装本地下载的包。
+
+说明：
+
+- `.ipk` 由 Forgejo 托管，签名密钥/官方源依赖（`sing-box`、各 `kmod-*`、`curl` 等）仍由路由器已有的
+  官方 OpenWrt 软件源解析——这一点与 GitHub 安装方式完全相同，因此路由器需要能访问官方源。
+- 发布新版时，把 GitHub 新 Release 里的 `.ipk` 同步到 Forgejo 对应 Release 即可；脚本走 `latest`，无需改动。
+- 若 Forgejo 地址或仓库不同，可用环境变量覆盖：
+  `MOMO_FORGE_HOST=http://你的地址 MOMO_FORGE_REPO=owner/repo sh local-install.sh`
+
+> 下面方式一至方式四是上游基于 GitHub 的安装方式，需要路由器能访问 GitHub / GitHub Pages。
+
 ### 已发布的软件包
 
 这个分支会在两个地方发布可安装的软件包：
