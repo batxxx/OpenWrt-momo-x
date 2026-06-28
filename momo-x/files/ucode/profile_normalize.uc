@@ -417,6 +417,18 @@ function direct_domains() {
 	return domains;
 }
 
+function is_generated_china_domain_rule(rule) {
+	if (rule?.outbound != 'direct' || type(rule?.domain_suffix) != 'array' || length(rule.domain_suffix) < 1000) {
+		return false;
+	}
+	for (let domain in rule.domain_suffix) {
+		if (domain == 'xiaohongshu.com') {
+			return true;
+		}
+	}
+	return false;
+}
+
 function ensure_route(profile, node_tags) {
 	const dns_inbound_tag = option('core', 'dns_inbound_tag', 'dns-in');
 
@@ -431,6 +443,9 @@ function ensure_route(profile, node_tags) {
 	let rules = [];
 	for (let rule in profile.route.rules) {
 		if (!normalize_route_rule(rule)) {
+			continue;
+		}
+		if (is_generated_china_domain_rule(rule)) {
 			continue;
 		}
 		if (rule?.inbound == dns_inbound_tag && rule?.action == 'hijack-dns') {
