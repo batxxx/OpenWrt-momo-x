@@ -2,14 +2,10 @@
 
 'use strict';
 
-import { popen, readfile, writefile } from 'fs';
+import { readfile, writefile } from 'fs';
 
 const input_path = ARGV[0];
 const output_path = ARGV[1];
-
-function shellquote(s) {
-	return `'${replace(s, "'", "'\\''")}'`;
-}
 
 function b64decode(value) {
 	value = trim('' + (value || ''));
@@ -17,24 +13,16 @@ function b64decode(value) {
 		return '';
 	}
 
+	// URL-safe base64 -> standard, pad to a multiple of 4, then decode with the
+	// builtin. (The previous openssl+tmpfile pipe silently truncated some
+	// subscriptions, dropping nodes; the builtin decodes the whole blob.)
 	value = replace(value, /-/g, '+');
 	value = replace(value, /_/g, '/');
 	while (length(value) % 4 != 0) {
 		value += '=';
 	}
 
-	const tmp_path = '/tmp/momo-share-b64-' + sprintf('%08x', time()) + '.txt';
-	writefile(tmp_path, value);
-
-	const process = popen('openssl base64 -A -d -in ' + shellquote(tmp_path) + ' 2>/dev/null');
-	let decoded = '';
-	if (process) {
-		decoded = process.read('all');
-		process.close();
-	}
-	system('rm -f ' + shellquote(tmp_path));
-
-	return decoded || '';
+	return b64dec(value) || '';
 }
 
 function hex_value(ch) {
@@ -370,7 +358,10 @@ function decode_subscription(raw) {
 		return text;
 	}
 
-	const compact = replace(text, /[\s|]+/g, '');
+	// ucode treats \s inside a character class as a literal 's', which silently
+	// stripped every 's' from base64 payloads and corrupted them. Match whitespace
+	// explicitly instead.
+	const compact = replace(text, /[ \t\r\n|]+/g, '');
 	const decoded = b64decode(compact);
 	if (match(decoded, /(vmess|vless|trojan|ss):\/\//)) {
 		return replace(decoded, /\r/g, '\n');
