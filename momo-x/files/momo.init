@@ -77,11 +77,17 @@ EOF
 DNSMASQ_BACKUP_PATH="$HOME_DIR/dnsmasq.backup"
 
 setup_dnsmasq_forward() {
-	local dns_port
+	local dns_port dns_fakeip
 	dns_port="$1"
 	[ -n "$dns_port" ] || return 0
 	[ -x /etc/init.d/dnsmasq ] || return 0
 	uci -q show dhcp.@dnsmasq[0] >/dev/null || return 0
+	config_get_bool dns_fakeip "mixin" "dns_fakeip" 0
+	if [ "$dns_fakeip" = 1 ]; then
+		log "DNS" "Skip dnsmasq forward while Fake-IP DNS is enabled."
+		restore_dnsmasq_forward
+		return 0
+	fi
 
 	if [ ! -f "$DNSMASQ_BACKUP_PATH" ]; then
 		{
