@@ -262,6 +262,12 @@ const methods = {
 			return { success: success, results: results };
 		}
 	},
+	update_geoip: {
+		call: function() {
+			const success = system(['service', 'momo', 'update_geoip']) == 0;
+			return { success: success };
+		}
+	},
 	check_profile_path: {
 		args: { path: 'path' },
 		call: function(req) {

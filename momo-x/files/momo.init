@@ -10,6 +10,7 @@ PROG="/usr/bin/sing-box"
 
 extra_command 'update_subscription' 'Update subscription by section id'
 extra_command 'update_subscriptions' 'Update all enabled subscriptions'
+extra_command 'update_geoip' 'Update China mainland IP nft sets from remote lists'
 extra_command 'clear_logs' 'Clear logs if size exceeds the limit'
 
 boot_func() {
@@ -189,6 +190,31 @@ subscription_update_cron() {
 	echo "$minute $hour * * $weekday"
 }
 
+geoip_update_cron() {
+	local mode weekday time hour minute interval
+	config_get mode "config" "geoip_update_mode" "appointment"
+	if [ "$mode" = "cycle" ]; then
+		config_get interval "config" "geoip_update_interval" "1440"
+		case "$interval" in
+			60) echo "0 * * * *" ;;
+			120) echo "0 */2 * * *" ;;
+			180) echo "0 */3 * * *" ;;
+			360) echo "0 */6 * * *" ;;
+			720) echo "0 */12 * * *" ;;
+			1440) echo "0 0 * * *" ;;
+			*) echo "0 5 * * *" ;;
+		esac
+		return
+	fi
+	config_get weekday "config" "geoip_update_weekday" "*"
+	config_get time "config" "geoip_update_time" "05:00"
+	hour="${time%%:*}"
+	minute="${time##*:}"
+	[ -n "$hour" ] || hour=5
+	[ -n "$minute" ] || minute=0
+	echo "$minute $hour * * $weekday"
+}
+
 build_scheduled_restart_cron() {
 	local mode weekday time hour minute interval
 	config_get mode "config" "scheduled_restart_mode" "appointment"
@@ -257,6 +283,19 @@ start_service() {
 	if [ "$subscription_scheduled_update" = 1 ] && [ -n "$subscription_scheduled_update_cron" ]; then
 		log "App" "Set subscription scheduled update."
 		echo "$subscription_scheduled_update_cron /etc/init.d/momo update_subscriptions #momo subscription scheduled update" >> "/etc/crontabs/root"
+		/etc/init.d/cron restart
+	fi
+	# geoip scheduled update
+	local geoip_scheduled_update geoip_scheduled_update_cron
+	config_get_bool geoip_scheduled_update "config" "geoip_scheduled_update" 0
+	geoip_scheduled_update_cron="$(geoip_update_cron)"
+	if [ -z "$geoip_scheduled_update_cron" ]; then
+		config_get geoip_scheduled_update_cron "config" "geoip_scheduled_update_cron"
+	fi
+	sed -i "/#momo geoip scheduled update/d" "/etc/crontabs/root" > /dev/null 2>&1
+	if [ "$geoip_scheduled_update" = 1 ] && [ -n "$geoip_scheduled_update_cron" ]; then
+		log "App" "Set geoip scheduled update."
+		echo "$geoip_scheduled_update_cron /etc/init.d/momo update_geoip #momo geoip scheduled update" >> "/etc/crontabs/root"
 		/etc/init.d/cron restart
 	fi
 	# check if enabled
@@ -1195,5 +1234,78 @@ update_subscriptions() {
 	}
 	config_load momo
 	config_foreach update_subscription_collect subscription
+	return "$failed"
+}
+
+update_geoip() {
+	prepare_files
+	config_load momo
+
+	local geoip_v4_url geoip_v6_url geoip_download_proxy bypass4 bypass6 table_active
+	config_get geoip_v4_url "config" "geoip_v4_url" "https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china.txt"
+	config_get geoip_v6_url "config" "geoip_v6_url" "https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china6.txt"
+	config_get geoip_download_proxy "config" "geoip_download_proxy"
+	config_get_bool bypass4 "proxy" "bypass_china_mainland_ip" 0
+	config_get_bool bypass6 "proxy" "bypass_china_mainland_ip6" 0
+	table_active=0
+	nft list table inet momo > /dev/null 2>&1 && table_active=1
+
+	# $1 family(4|6) $2 url $3 set_name $4 addr_type $5 dest $6 bypass_on
+	geoip_fetch_one() {
+		local family="$1" url="$2" set_name="$3" addr_type="$4" dest="$5" bypass_on="$6"
+		if [ -z "$url" ]; then
+			log "Geoip" "Skip IPv$family: download url is empty."
+			return 1
+		fi
+		local tmp count elems
+		tmp="$(mktemp)"
+		if [ -n "$geoip_download_proxy" ]; then
+			curl -s -f -m 120 --connect-timeout 15 --retry 3 -L -x "$geoip_download_proxy" -o "$tmp" "$url" > /dev/null 2>&1
+		else
+			curl -s -f -m 120 --connect-timeout 15 --retry 3 -L -o "$tmp" "$url" > /dev/null 2>&1
+		fi
+		if [ "$?" != 0 ] || [ ! -s "$tmp" ]; then
+			log "Geoip" "Download IPv$family failed, keep existing list."
+			rm -f "$tmp"
+			return 1
+		fi
+		# keep only CIDR lines of the right family (drop comments / blanks / garbage)
+		if [ "$family" = 4 ]; then
+			grep -E '^[0-9]+\.[0-9.]+/[0-9]+$' "$tmp" > "$tmp.f"
+		else
+			grep -E '^[0-9a-fA-F:]+/[0-9]+$' "$tmp" > "$tmp.f"
+		fi
+		count="$(wc -l < "$tmp.f")"
+		if [ "$count" -lt 1 ]; then
+			log "Geoip" "IPv$family list has no valid CIDR, keep existing list."
+			rm -f "$tmp" "$tmp.f"
+			return 1
+		fi
+		elems="$(paste -sd, "$tmp.f")"
+		{
+			echo '#!/usr/sbin/nft -f'
+			echo ''
+			echo 'table inet momo {'
+			echo "	set $set_name {"
+			echo "		type $addr_type"
+			echo '		flags interval'
+			echo '		elements = {'
+			echo "			$elems"
+			echo '		}'
+			echo '	}'
+			echo '}'
+		} > "$dest.new" && mv "$dest.new" "$dest"
+		rm -f "$tmp" "$tmp.f"
+		log "Geoip" "Updated IPv$family list ($count entries)."
+		# live refresh only when this family's bypass is active, else just update the file for next start
+		if [ "$table_active" = 1 ] && [ "$bypass_on" = 1 ]; then
+			{ echo "flush set inet momo $set_name"; echo "add element inet momo $set_name { $elems }"; } | nft -f - > /dev/null 2>&1
+		fi
+		return 0
+	}
+
+	local failed=0
+	geoip_fetch_one 4 "$geoip_v4_url" "china_ip" "ipv4_addr" "$GEOIP_CN_NFT" "$bypass4" || failed=1
+	geoip_fetch_one 6 "$geoip_v6_url" "china_ip6" "ipv6_addr" "$GEOIP6_CN_NFT" "$bypass6" || failed=1
 	return "$failed"
 }

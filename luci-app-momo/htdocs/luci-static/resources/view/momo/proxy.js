@@ -183,6 +183,25 @@ return view.extend({
         o = s.taboption('bypass', form.Flag, 'bypass_china_mainland_ip6', _('绕过中国大陆 IPv6'));
         o.rmempty = false;
 
+        o = s.taboption('bypass', form.Flag, 'bypass_china_mainland_domain', _('绕过中国大陆域名'));
+        o.description = _('使用 sing-box 远程规则集 geosite-cn，由 sing-box 按更新间隔自动刷新，无需手动维护。');
+        o.rmempty = false;
+
+        o = s.taboption('bypass', form.Value, 'geosite_cn_url', _('geosite-cn 规则集地址'));
+        o.depends('bypass_china_mainland_domain', '1');
+        o.placeholder = 'https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs';
+
+        o = s.taboption('bypass', form.Value, 'geosite_update_interval', _('geosite 更新间隔'));
+        o.depends('bypass_china_mainland_domain', '1');
+        o.placeholder = '168h';
+        o.value('24h', _('1 天'));
+        o.value('72h', _('3 天'));
+        o.value('168h', _('7 天'));
+
+        o = s.taboption('bypass', form.Value, 'geosite_download_detour', _('geosite 下载出站'));
+        o.depends('bypass_china_mainland_domain', '1');
+        o.description = _('留空使用默认路由出站；可填某个出站标签让规则集通过代理下载。');
+
         o = s.taboption('bypass', form.DynamicList, 'bypass_domain', _('自定义直连域名'));
         o.placeholder = 'example.com';
 
@@ -216,6 +235,75 @@ return view.extend({
         o = s.taboption('misc', form.Value, 'tun_interval', _('检查 TUN 设备间隔(秒)'));
         o.datatype = 'uinteger';
         o.rmempty = false;
+
+        s = m.section(form.NamedSection, 'config', 'config', _('中国大陆 IP 库'));
+        s.description = _('“绕过中国大陆 IPv4/IPv6” 使用的本地 IP 列表。可从远程列表更新并设置自动更新。');
+
+        o = s.option(form.Value, 'geoip_v4_url', _('IPv4 列表地址'));
+        o.placeholder = 'https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china.txt';
+
+        o = s.option(form.Value, 'geoip_v6_url', _('IPv6 列表地址'));
+        o.placeholder = 'https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china6.txt';
+
+        o = s.option(form.Value, 'geoip_download_proxy', _('下载代理'));
+        o.placeholder = 'http://127.0.0.1:7890';
+        o.description = _('可选。形如 http://host:port 或 socks5://host:port，留空则直连下载。');
+
+        o = s.option(form.Flag, 'geoip_scheduled_update', _('自动更新'));
+        o.rmempty = false;
+
+        o = s.option(form.ListValue, 'geoip_update_mode', _('更新模式'));
+        o.default = 'appointment';
+        o.rmempty = false;
+        o.depends('geoip_scheduled_update', '1');
+        o.value('appointment', _('预约'));
+        o.value('cycle', _('循环'));
+
+        o = s.option(form.ListValue, 'geoip_update_weekday', _('更新日期(每周)'));
+        o.default = '*';
+        o.rmempty = false;
+        o.depends({ geoip_scheduled_update: '1', geoip_update_mode: 'appointment' });
+        o.value('*', _('每天'));
+        o.value('1', _('每周一'));
+        o.value('2', _('每周二'));
+        o.value('3', _('每周三'));
+        o.value('4', _('每周四'));
+        o.value('5', _('每周五'));
+        o.value('6', _('每周六'));
+        o.value('0', _('每周日'));
+
+        o = s.option(form.ListValue, 'geoip_update_time', _('更新时间(每天)'));
+        o.default = '05:00';
+        o.rmempty = false;
+        o.depends({ geoip_scheduled_update: '1', geoip_update_mode: 'appointment' });
+        for (let hour = 0; hour < 24; hour++) {
+            const value = String(hour).padStart(2, '0') + ':00';
+            o.value(value, hour + ':00');
+        }
+
+        o = s.option(form.ListValue, 'geoip_update_interval', _('更新间隔'));
+        o.default = '1440';
+        o.rmempty = false;
+        o.depends({ geoip_scheduled_update: '1', geoip_update_mode: 'cycle' });
+        o.value('60', _('1 小时'));
+        o.value('120', _('2 小时'));
+        o.value('180', _('3 小时'));
+        o.value('360', _('6 小时'));
+        o.value('720', _('12 小时'));
+        o.value('1440', _('24 小时'));
+
+        o = s.option(form.DummyValue, '_update_geoip', _('立即更新 IP 库'));
+        o.cfgvalue = function () {
+            return E('button', {
+                type: 'button',
+                class: 'btn cbi-button cbi-button-positive',
+                click: function (ev) {
+                    momo.stopButtonEvent(ev);
+                    return momo.updateGeoip();
+                }
+            }, _('立即更新'));
+        };
+        o.write = function () { };
 
         return m.render().then(normalizeButtons);
     }

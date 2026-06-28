@@ -81,6 +81,12 @@ const callMomoUpdateSubscriptions = rpc.declare({
     expect: { '': {} }
 });
 
+const callMomoUpdateGeoip = rpc.declare({
+    object: 'luci.momo',
+    method: 'update_geoip',
+    expect: { '': {} }
+});
+
 const callMomoSetProfile = rpc.declare({
     object: 'luci.momo',
     method: 'set_profile',
@@ -316,6 +322,20 @@ return baseclass.extend({
             return result;
         }, this)).catch(L.bind(function (error) {
             this.notify(_('订阅更新失败：') + String(error), 'danger');
+            throw error;
+        }, this));
+    },
+
+    updateGeoip: function () {
+        return callMomoUpdateGeoip().then(L.bind(function (result) {
+            if (result?.success) {
+                this.notify(_('中国大陆 IP 库更新成功'), 'info');
+            } else {
+                this.notify(_('中国大陆 IP 库更新失败，请检查日志与下载地址'), 'danger');
+            }
+            return result;
+        }, this)).catch(L.bind(function (error) {
+            this.notify(_('中国大陆 IP 库更新失败：') + String(error), 'danger');
             throw error;
         }, this));
     },

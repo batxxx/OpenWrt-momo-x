@@ -436,6 +436,43 @@ function ensure_route(profile, node_tags) {
 			outbound: 'direct'
 		});
 	}
+	// bypass china mainland domains via sing-box native remote rule_set (self-updating)
+	// ponytail: relies on sing-box's own update_interval (no local cache). Needs network at
+	// startup; if download fails the set is empty and traffic just goes through proxy (no leak).
+	// Add a local-download+cron path only if offline-first behavior is required.
+	if (option('proxy', 'bypass_china_mainland_domain', '0') == '1') {
+		const geosite_tag = 'geosite-cn';
+		const geosite_url = option('proxy', 'geosite_cn_url',
+			'https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs');
+		const geosite_detour = option('proxy', 'geosite_download_detour', '');
+		const geosite_interval = option('proxy', 'geosite_update_interval', '168h');
+		if (type(profile.route.rule_set) != 'array') {
+			profile.route.rule_set = [];
+		}
+		let has_geosite = false;
+		for (let rs in profile.route.rule_set) {
+			if (rs?.tag == geosite_tag) {
+				has_geosite = true;
+			}
+		}
+		if (!has_geosite) {
+			let rule_set = {
+				tag: geosite_tag,
+				type: 'remote',
+				format: 'binary',
+				url: geosite_url,
+				update_interval: geosite_interval
+			};
+			if (length(geosite_detour) > 0) {
+				rule_set.download_detour = geosite_detour;
+			}
+			push(profile.route.rule_set, rule_set);
+		}
+		unshift(profile.route.rules, {
+			rule_set: geosite_tag,
+			outbound: 'direct'
+		});
+	}
 	if (!has_dns_hijack) {
 		unshift(profile.route.rules, {
 			inbound: dns_inbound_tag,
