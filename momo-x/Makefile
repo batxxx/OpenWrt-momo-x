@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=momo-x
 PKG_VERSION:=2026.06.03
-PKG_RELEASE:=15
+PKG_RELEASE:=16
 
 PKG_LICENSE:=GPL-3.0+
 PKG_MAINTAINER:=Joseph Mory <morytyann@gmail.com>
@@ -28,7 +28,6 @@ define Package/momo-x/install
 	$(INSTALL_DIR) $(1)/etc/momo/ucode
 	$(INSTALL_DIR) $(1)/etc/momo/scripts
 	$(INSTALL_DIR) $(1)/etc/momo/firewall
-	$(INSTALL_DIR) $(1)/etc/momo/rules
 	$(INSTALL_DIR) $(1)/etc/momo/profiles
 	$(INSTALL_DIR) $(1)/etc/momo/subscriptions
 	$(INSTALL_DIR) $(1)/etc/momo/subconverter

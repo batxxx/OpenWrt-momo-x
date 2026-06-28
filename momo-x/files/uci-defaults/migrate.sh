@@ -80,6 +80,12 @@ proxy_bypass_china_mainland_domain=$(uci -q get momo.proxy.bypass_china_mainland
 proxy_bypass_geo_auto_update=$(uci -q get momo.proxy.bypass_geo_auto_update); [ -z "$proxy_bypass_geo_auto_update" ] && uci set momo.proxy.bypass_geo_auto_update=0
 proxy_bypass_geo_update_interval=$(uci -q get momo.proxy.bypass_geo_update_interval); [ -z "$proxy_bypass_geo_update_interval" ] && uci set momo.proxy.bypass_geo_update_interval=weekly
 
+# since v1.2.5
+proxy_geoip_v4_url=$(uci -q get momo.proxy.geoip_v4_url); [ -z "$proxy_geoip_v4_url" ] && uci set momo.proxy.geoip_v4_url="https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china.txt"
+proxy_geoip_v6_url=$(uci -q get momo.proxy.geoip_v6_url); [ -z "$proxy_geoip_v6_url" ] && uci set momo.proxy.geoip_v6_url="https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china6.txt"
+proxy_geosite_cn_url=$(uci -q get momo.proxy.geosite_cn_url); [ -z "$proxy_geosite_cn_url" ] && uci set momo.proxy.geosite_cn_url="https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs"
+proxy_geosite_update_interval=$(uci -q get momo.proxy.geosite_update_interval); [ -z "$proxy_geosite_update_interval" ] && uci set momo.proxy.geosite_update_interval="168h"
+
 # commit
 uci commit momo
 

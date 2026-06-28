@@ -184,9 +184,32 @@ return view.extend({
         o.rmempty = false;
 
         o = s.taboption('bypass', form.Flag, 'bypass_china_mainland_domain', _('绕过中国大陆域名'));
+        o.description = _('使用 sing-box 原生远程规则集 geosite-cn，由 sing-box 按更新间隔自动刷新并缓存，无需本地维护域名表。');
         o.rmempty = false;
 
-        o = s.taboption('bypass', form.Flag, 'bypass_geo_auto_update', _('自动更新大陆绕过规则'));
+        o = s.taboption('bypass', form.Value, 'geosite_cn_url', _('geosite-cn 规则集地址'));
+        o.depends('bypass_china_mainland_domain', '1');
+        o.placeholder = 'https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs';
+
+        o = s.taboption('bypass', form.Value, 'geosite_update_interval', _('geosite 更新间隔'));
+        o.depends('bypass_china_mainland_domain', '1');
+        o.placeholder = '168h';
+        o.value('24h', _('1 天'));
+        o.value('72h', _('3 天'));
+        o.value('168h', _('7 天'));
+
+        o = s.taboption('bypass', form.Value, 'geosite_download_detour', _('geosite 下载出站'));
+        o.depends('bypass_china_mainland_domain', '1');
+        o.description = _('留空使用默认路由出站；可填某个出站标签让规则集通过代理下载。');
+
+        o = s.taboption('bypass', form.Value, 'geoip_v4_url', _('大陆 IPv4 列表地址'));
+        o.placeholder = 'https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china.txt';
+
+        o = s.taboption('bypass', form.Value, 'geoip_v6_url', _('大陆 IPv6 列表地址'));
+        o.placeholder = 'https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china6.txt';
+
+        o = s.taboption('bypass', form.Flag, 'bypass_geo_auto_update', _('自动更新大陆 IP 库'));
+        o.description = _('定时从上面的列表地址刷新大陆 IPv4/IPv6 nft 集合（域名规则集由 sing-box 自行更新，不走这里）。');
         o.rmempty = false;
 
         o = s.taboption('bypass', form.ListValue, 'bypass_geo_update_interval', _('更新频率'));
@@ -196,7 +219,7 @@ return view.extend({
         o.default = 'weekly';
         o.depends('bypass_geo_auto_update', '1');
 
-        o = s.taboption('bypass', form.Button, '_update_geo_rules', _('更新大陆绕过规则'));
+        o = s.taboption('bypass', form.Button, '_update_geo_rules', _('更新大陆 IP 库'));
         o.inputtitle = _('立即更新');
         o.inputstyle = 'apply';
         o.onclick = function (ev) {

@@ -2,7 +2,7 @@
 
 'use strict';
 
-import { access, readfile, writefile } from 'fs';
+import { readfile, writefile } from 'fs';
 import { cursor } from 'uci';
 
 const uci = cursor();
@@ -397,7 +397,6 @@ function clean_domain(value) {
 function direct_domains() {
 	let domains = [];
 	let seen = {};
-	const geosite_cn = '/etc/momo/rules/geosite_cn.txt';
 	for (let value in uci.get('momo', 'proxy', 'bypass_domain') || []) {
 		const domain = clean_domain(value);
 		if (domain != null && !seen[domain]) {
@@ -405,28 +404,7 @@ function direct_domains() {
 			seen[domain] = true;
 		}
 	}
-	if (uci.get('momo', 'proxy', 'bypass_china_mainland_domain') == '1' && access(geosite_cn)) {
-		for (let value in split(readfile(geosite_cn), '\n')) {
-			const domain = clean_domain(value);
-			if (domain != null && !seen[domain]) {
-				push(domains, domain);
-				seen[domain] = true;
-			}
-		}
-	}
 	return domains;
-}
-
-function is_generated_china_domain_rule(rule) {
-	if (rule?.outbound != 'direct' || type(rule?.domain_suffix) != 'array' || length(rule.domain_suffix) < 1000) {
-		return false;
-	}
-	for (let domain in rule.domain_suffix) {
-		if (domain == 'xiaohongshu.com') {
-			return true;
-		}
-	}
-	return false;
 }
 
 function ensure_route(profile, node_tags) {
@@ -445,7 +423,8 @@ function ensure_route(profile, node_tags) {
 		if (!normalize_route_rule(rule)) {
 			continue;
 		}
-		if (is_generated_china_domain_rule(rule)) {
+		// drop any previously generated china-domain rule (idempotent, dedup by rule_set tag)
+		if (rule?.rule_set == 'geosite-cn') {
 			continue;
 		}
 		if (rule?.inbound == dns_inbound_tag && rule?.action == 'hijack-dns') {
@@ -458,6 +437,41 @@ function ensure_route(profile, node_tags) {
 	if (length(bypass_domain) > 0) {
 		unshift(profile.route.rules, {
 			domain_suffix: bypass_domain,
+			outbound: 'direct'
+		});
+	}
+	// bypass china mainland domains via sing-box native remote rule_set:
+	// self-updating (update_interval) and persisted in cache_file, so config.json stays tiny
+	// and re-normalization can't pile up giant domain_suffix lists. Dedup by tag below.
+	const geosite_tag = 'geosite-cn';
+	if (type(profile.route.rule_set) == 'array') {
+		let kept = [];
+		for (let rs in profile.route.rule_set) {
+			if (rs?.tag != geosite_tag) {
+				push(kept, rs);
+			}
+		}
+		profile.route.rule_set = kept;
+	}
+	if (option('proxy', 'bypass_china_mainland_domain', '0') == '1') {
+		if (type(profile.route.rule_set) != 'array') {
+			profile.route.rule_set = [];
+		}
+		let rule_set = {
+			tag: geosite_tag,
+			type: 'remote',
+			format: 'binary',
+			url: option('proxy', 'geosite_cn_url',
+				'https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs'),
+			update_interval: option('proxy', 'geosite_update_interval', '168h')
+		};
+		const detour = option('proxy', 'geosite_download_detour', '');
+		if (length(detour) > 0) {
+			rule_set.download_detour = detour;
+		}
+		push(profile.route.rule_set, rule_set);
+		unshift(profile.route.rules, {
+			rule_set: geosite_tag,
 			outbound: 'direct'
 		});
 	}

@@ -344,8 +344,8 @@ return baseclass.extend({
 
     updateGeoRules: function () {
         return this.action(callMomoUpdateGeoRules(), {
-            success: _('大陆绕过规则已更新'),
-            failure: _('大陆绕过规则更新失败')
+            success: _('大陆 IP 库已更新'),
+            failure: _('大陆 IP 库更新失败，请检查日志与列表地址')
         });
     },
 
