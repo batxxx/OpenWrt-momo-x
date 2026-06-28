@@ -283,7 +283,15 @@ function ensure_inbounds(profile) {
 	}
 
 	for (let inbound in profile.inbounds) {
-		if (inbound?.tag != tun_inbound_tag || inbound?.type != 'tun') {
+		if (inbound?.type != 'tun') {
+			continue;
+		}
+		// momo manages tun routing itself (nft fwmark -> policy route to the tun table).
+		// sing-box's auto_route would set up a SECOND, conflicting routing system, which
+		// some converted subscriptions enable; force it off so the two don't fight.
+		inbound.auto_route = false;
+		delete inbound.strict_route;
+		if (inbound.tag != tun_inbound_tag) {
 			continue;
 		}
 		if (inbound.interface_name == null || length(inbound.interface_name) == 0) {
