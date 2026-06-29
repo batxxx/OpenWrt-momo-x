@@ -84,6 +84,15 @@ if (uci_bool(uci.get('momo', 'mixin', 'dns_fakeip'))) {
 		inet6_range: 'fc00::/18'
 	});
 	config['dns']['rules'] = [
+		// Reject PTR/reverse lookups (incl. private in-addr.arpa and mDNS _dns-sd._udp)
+		// so they don't leak to the upstream resolver, hang ~80s, and clog DNS.
+		{
+			query_type: [
+				'PTR'
+			],
+			action: 'predefined',
+			rcode: 'NXDOMAIN'
+		},
 		{
 			query_type: [
 				'A',
